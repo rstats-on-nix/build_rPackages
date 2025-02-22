@@ -37,7 +37,7 @@ jobs:
           nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
             agg <- read.csv(\"aggregated_counts.csv\", nrows = 200);
             rix(
-              r_ver = \"2025-02-17\",
+              date = \"2025-02-17\",
               r_pkgs = agg$package,
               ide = \"other\",
               project_path = \".\",
@@ -95,7 +95,7 @@ jobs:
           nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
             agg <- read.csv(\"aggregated_counts.csv\", nrows = 5);
             rix(
-              r_ver = \"2025-02-17\",
+              date = \"2025-02-17\",
               r_pkgs = agg$package,
               ide = \"other\",
               project_path = \".\",

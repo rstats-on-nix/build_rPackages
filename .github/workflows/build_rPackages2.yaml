@@ -1,4 +1,4 @@
-name: build_rPackages2
+name: build_rPackages top 200 to 400
 
 on:
   push:
@@ -29,25 +29,41 @@ jobs:
       - name: Check date
         run: echo ${{ env.branch_date }}
 
+      - name: Download top CRAN packages
+        run: wget https://raw.githubusercontent.com/rstats-on-nix/top_cran_monthly/refs/heads/master/aggregated_counts.csv
+
+      - name: Set up R and rix
+        run: |
+          nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
+            agg <- read.csv(\"aggregated_counts.csv\", nrows = 200);
+            rix(
+              r_ver = \"2025-02-17\",
+              r_pkgs = agg$package,
+              ide = "none",
+              project_path = \".\",
+              overwrite = TRUE,
+              print = FALSE
+            )
+
       - name: Update default.nix
         run: |
-          sed -i 's/REPLACE_DATE/${{ env.branch_date }}/g' default2.nix
+          sed -i 's/2025-02-17/${{ env.branch_date }}/g' default.nix
 
-      - name: Build on date ${{ github.event.client_payload.ref_name }} (default2.nix)
+      - name: Build on date ${{ github.event.client_payload.ref_name }} 
         run: |
-          nix-build --max-jobs 1 --cores 2 default2.nix --keep-going 2>&1 | tee -a build-linux.log
+          nix-build --max-jobs 2 --cores 2 default.nix --keep-going 2>&1 | tee -a build-linux2.log
 
       - name: Upload build log
         uses: actions/upload-artifact@v4
         with:
           name: build-linux2-log
-          path: build-linux.log
+          path: build-linux2.log
         continue-on-error: true
 
       - name: Check for failed builds
         run: |
           # Extract failed packages
-          grep -oE 'removing.*' build-linux.log | sort -u > failed.txt
+          grep -oE 'removing.*' build-linux2.log | sort -u > failed.txt
           if [ -s failed.txt ]; then
             echo "Some packages failed to build:"
             cat failed.txt
@@ -74,25 +90,38 @@ jobs:
       - name: Check date
         run: echo ${{ env.branch_date }}
 
+      - name: Set up R and rix
+        run: |
+          nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
+            agg <- read.csv(\"aggregated_counts.csv\", skip = 5, nrows = 10);
+            rix(
+              r_ver = \"2025-02-17\",
+              r_pkgs = agg$package,
+              ide = "none",
+              project_path = \".\",
+              overwrite = TRUE,
+              print = FALSE
+            )
+
       - name: Update default.nix
         run: |
-          sed -i '' 's/REPLACE_DATE/${{ env.branch_date }}/g' default2.nix
+          sed -i 's/2025-02-17/${{ env.branch_date }}/g' default.nix
 
-      - name: Build on date ${{ github.event.client_payload.ref_name }} (default2.nix)
+      - name: Build on date ${{ github.event.client_payload.ref_name }}
         run: |
-          nix-build --max-jobs 1 --cores 2 default2.nix --keep-going 2>&1 | tee -a build-darwin.log
+          nix-build --max-jobs 2 --cores 2 default.nix --keep-going 2>&1 | tee -a build-darwin2.log
 
       - name: Upload build log
         uses: actions/upload-artifact@v4
         with:
           name: build-darwin2-log
-          path: build-darwin.log
+          path: build-darwin2.log
         continue-on-error: true
 
       - name: Check for failed builds
         run: |
           # Extract failed packages
-          grep -oE 'removing.*' build-darwin.log | sort -u > failed.txt
+          grep -oE 'removing.*' build-darwin2.log | sort -u > failed.txt
           if [ -s failed.txt ]; then
             echo "Some packages failed to build:"
             cat failed.txt

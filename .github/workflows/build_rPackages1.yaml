@@ -36,6 +36,7 @@ jobs:
         run: |
           nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
             agg <- read.csv(\"aggregated_counts.csv\", nrows = 200);
+            str(agg);
             pkgs <- agg$package;
             str(pkgs);
             rix(

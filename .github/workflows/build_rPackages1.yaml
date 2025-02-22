@@ -43,7 +43,7 @@ jobs:
               project_path = \".\",
               overwrite = TRUE,
               print = FALSE
-            )
+            )"'
 
       - name: Update default.nix
         run: |
@@ -101,7 +101,7 @@ jobs:
               project_path = \".\",
               overwrite = TRUE,
               print = FALSE
-            )
+            )"'
 
       - name: Update default.nix
         run: |

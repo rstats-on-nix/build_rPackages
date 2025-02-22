@@ -35,7 +35,7 @@ jobs:
       - name: Set up R and rix
         run: |
           nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
-            agg <- read.csv(\"aggregated_counts.csv\", skip = 2, nrows = 1);
+            agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 1000);
             colnames(agg) <- c(\"package\", \"N\");
             pkgs <- agg[[\"package\"]];
             rix(
@@ -78,6 +78,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+          git pull --rebase origin master
           git add logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log
           git commit -m "Updated linux build logs"
           git push
@@ -106,7 +107,7 @@ jobs:
       - name: Set up R and rix
         run: |
           nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
-            agg <- read.csv(\"aggregated_counts.csv\", skip = 2, nrows = 1);
+            agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 1000);
             colnames(agg) <- c(\"package\", \"N\");
             pkgs <- agg[[\"package\"]];
             rix(
@@ -149,6 +150,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+          git pull --rebase origin master
           git add logs/build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log
           git commit -m "Updated darwin build logs"
           git push

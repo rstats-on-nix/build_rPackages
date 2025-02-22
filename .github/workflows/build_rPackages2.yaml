@@ -36,6 +36,7 @@ jobs:
         run: |
           nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
             agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 500);
+            colnames(agg) <- c(\"package\", \"N\");
             pkgs <- agg[[\"package\"]];
             rix(
               date = \"2025-02-17\",
@@ -98,6 +99,7 @@ jobs:
         run: |
           nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
             agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 500);
+            colnames(agg) <- c(\"package\", \"N\");
             pkgs <- agg[[\"package\"]];
             rix(
               date = \"2025-02-17\",

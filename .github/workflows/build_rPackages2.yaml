@@ -53,25 +53,39 @@ jobs:
 
       - name: Build on date ${{ github.event.client_payload.ref_name }} 
         run: |
-          nix-build --max-jobs 2 --cores 2 default.nix --keep-going 2>&1 | tee -a build-linux2.log
+          nix-build --max-jobs 2 --cores 2 default.nix --keep-going 2>&1 | tee -a build-linux-${{ env.branch_date }}-${{ github.run_id }}.log
 
-      - name: Upload build log
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-linux2-log
-          path: build-linux2.log
-        continue-on-error: true
+      - name: Move log to dated folder
+        run: |
+          mkdir -p logs/${{ env.branch_date }}
+          mv build-linux-${{ env.branch_date }}-${{ github.run_id }}.log logs/${{ env.branch_date }}
 
       - name: Check for failed builds
         run: |
           # Extract failed packages
-          grep -oE 'removing.*' build-linux2.log | sort -u > failed.txt
+          cd logs/logs/${{ env.branch_date }}
+          grep -oE 'removing.*' build-linux-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u > failed.txt
           if [ -s failed.txt ]; then
             echo "Some packages failed to build:"
             cat failed.txt
+            rm failed.txt
             exit 1
           else
             echo "All packages built successfully."
+          fi
+
+      - name: Commit and push log
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          if [ -n "$(git status --porcelain build-linux-${{ env.branch_date }}-${{ github.run_id }}.log)" ]; then
+            git add build-linux-${{ env.branch_date }}.log
+            git commit -m "Updated linux build logs"
+            git push
+          else
+            echo "No changes to commit."
           fi
 
   build-on-macos:
@@ -116,39 +130,38 @@ jobs:
 
       - name: Build on date ${{ github.event.client_payload.ref_name }}
         run: |
-          nix-build --max-jobs 2 --cores 2 default.nix --keep-going 2>&1 | tee -a build-darwin2.log
+          nix-build --max-jobs 2 --cores 2 default.nix --keep-going 2>&1 | tee -a build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log
 
-      - name: Upload build log
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-darwin2-log
-          path: build-darwin2.log
-        continue-on-error: true
+      - name: Move log to dated folder
+        run: |
+          mkdir -p logs/${{ env.branch_date }}
+          mv build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log logs/${{ env.branch_date }}
 
       - name: Check for failed builds
         run: |
           # Extract failed packages
-          grep -oE 'removing.*' build-darwin2.log | sort -u > failed.txt
+          cd logs/logs/${{ env.branch_date }}
+          grep -oE 'removing.*' build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u > failed.txt
           if [ -s failed.txt ]; then
             echo "Some packages failed to build:"
             cat failed.txt
+            rm failed.txt
             exit 1
           else
             echo "All packages built successfully."
           fi
 
-#  clone-and-open-pr:
-#      name: Clone rix and open PR
-#      runs-on: ubuntu-latest
-#      needs: build-on-macos
-#
-#      steps:
-#        - name: Clone rix and open PR
-#          run: |
-#            curl -X POST \
-#            -H "Authorization: token ${{ secrets.UPDATE_AVAILABLE_DATES }}" \
-#            -H "Accept: application/vnd.github.v3+json" \
-#            https://api.github.com/repos/ropensci/rix/dispatches \
-#            -d '{
-#              "event_type": "trigger-workflow"
-#            }'
+      - name: Commit and push log
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          if [ -n "$(git status --porcelain build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log)" ]; then
+            git add build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log
+            git commit -m "Updated darwin build logs"
+            git push
+          else
+            echo "No changes to commit."
+          fi
+

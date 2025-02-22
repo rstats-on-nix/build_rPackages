@@ -35,7 +35,7 @@ jobs:
       - name: Set up R and rix
         run: |
           nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
-            agg <- read.csv(\"aggregated_counts.csv\", skip = 200, nrows = 200);
+            agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 500);
             pkgs <- agg[[\"package\"]];
             rix(
               date = \"2025-02-17\",
@@ -91,10 +91,13 @@ jobs:
       - name: Check date
         run: echo ${{ env.branch_date }}
 
+      - name: Download top CRAN packages
+        run: wget https://raw.githubusercontent.com/rstats-on-nix/top_cran_monthly/refs/heads/master/aggregated_counts.csv
+
       - name: Set up R and rix
         run: |
           nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
-            agg <- read.csv(\"aggregated_counts.csv\", skip = 200, nrows = 200);
+            agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 500);
             pkgs <- agg[[\"package\"]];
             rix(
               date = \"2025-02-17\",

@@ -1,4 +1,4 @@
-name: build_rPackages
+name: build_rPackages1
 
 on:
   push:
@@ -37,14 +37,10 @@ jobs:
         run: |
           nix-build --max-jobs 1 --cores 2 default1.nix --keep-going 2>&1 | tee -a build-linux.log
 
-      - name: Build on date ${{ github.event.client_payload.ref_name }} (default2.nix)
-        run: |
-          nix-build --max-jobs 1 --cores 2 default2.nix --keep-going 2>&1 | tee -a build-linux.log
-
       - name: Upload build log
         uses: actions/upload-artifact@v4
         with:
-          name: build-linux-log
+          name: build-linux1-log
           path: build-linux.log
         continue-on-error: true
 
@@ -86,14 +82,10 @@ jobs:
         run: |
           nix-build --max-jobs 1 --cores 2 default1.nix --keep-going 2>&1 | tee -a build-darwin.log
 
-      - name: Build on date ${{ github.event.client_payload.ref_name }} (default2.nix)
-        run: |
-          nix-build --max-jobs 1 --cores 2 default2.nix --keep-going 2>&1 | tee -a build-darwin.log
-
       - name: Upload build log
         uses: actions/upload-artifact@v4
         with:
-          name: build-darwin-log
+          name: build-darwin1-log
           path: build-darwin.log
         continue-on-error: true
 

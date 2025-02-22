@@ -57,13 +57,13 @@ jobs:
 
       - name: Move log to dated folder
         run: |
-          mkdir -p logs/${{ env.branch_date }}
-          mv build-linux-${{ env.branch_date }}-${{ github.run_id }}.log logs/${{ env.branch_date }}
+          mkdir -p logs
+          mv build-linux-${{ env.branch_date }}-${{ github.run_id }}.log logs
 
       - name: Check for failed builds
         run: |
           # Extract failed packages
-          cd logs/${{ env.branch_date }}
+          cd logs
           grep -oE 'removing.*' build-linux-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u > failed.txt
           if [ -s failed.txt ]; then
             echo "Some packages failed to build:"
@@ -129,8 +129,8 @@ jobs:
 
       - name: Move log to dated folder
         run: |
-          mkdir -p logs/${{ env.branch_date }}
-          mv build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log logs/${{ env.branch_date }}
+          mkdir -p logs
+          mv build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log logs
 
       - name: Check for failed builds
         run: |

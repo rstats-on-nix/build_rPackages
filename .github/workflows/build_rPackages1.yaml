@@ -56,8 +56,8 @@ jobs:
 
       - name: Move log to dated folder
         run: |
-          mkdir -p logs/${{ env.branch_date }}
-          mv build-linux-${{ env.branch_date }}-${{ github.run_id }}.log logs/${{ env.branch_date }}
+          mkdir -p logs
+          mv build-linux-${{ env.branch_date }}-${{ github.run_id }}.log logs
 
       - name: Check for failed builds
         run: |
@@ -127,8 +127,8 @@ jobs:
 
       - name: Move log to dated folder
         run: |
-          mkdir -p logs/${{ env.branch_date }}
-          mv build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log logs/${{ env.branch_date }}
+          mkdir -p logs
+          mv build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log logs
 
       - name: Check for failed builds
         run: |

@@ -43,7 +43,7 @@ jobs:
               ide = \"other\",
               project_path = \".\",
               overwrite = TRUE,
-              print = FALSE
+              print = TRUE
             )"'
 
       - name: Update default.nix
@@ -105,12 +105,12 @@ jobs:
               ide = \"other\",
               project_path = \".\",
               overwrite = TRUE,
-              print = FALSE
+              print = TRUE
             )"'
 
       - name: Update default.nix
         run: |
-          sed -i 's/2025-02-17/${{ env.branch_date }}/g' default.nix
+          sed -i '' 's/2025-02-17/${{ env.branch_date }}/g' default.nix
 
       - name: Build on date ${{ github.event.client_payload.ref_name }}
         run: |

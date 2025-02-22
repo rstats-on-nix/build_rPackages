@@ -6,7 +6,7 @@ on:
       - [main, master]
 
 jobs:
-  r-daily-update:
+  build-on-ubuntu:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: ${{ secrets.MY_PAT }}
@@ -31,21 +31,21 @@ jobs:
         run: |
           nix-build --max-jobs 1 --cores 2 default.nix --keep-going 2>&1 | tee build.log
 
-     - name: Check for failed builds
-       run: |
-         # Extract failed packages
-         grep -oE 'removing.*' build.log | sort -u > failed.txt
+      - name: Check for failed builds
+        run: |
+          # Extract failed packages
+          grep -oE 'removing.*' build.log | sort -u > failed.txt
 
-         if [ -s failed.txt ]; then
-           echo "Some packages failed to build:"
-           cat failed.txt
-           exit 1
-         else
-           echo "All packages built successfully."
-         fi
+          if [ -s failed.txt ]; then
+            echo "Some packages failed to build:"
+            cat failed.txt
+            exit 1
+          else
+            echo "All packages built successfully."
+          fi
 
 
-  update-and-trigger-macos:
+  build-on-macos:
     name: Trigger build for available dates on macOS
     runs-on: macos-latest
     needs: update-and-trigger-ubuntu
@@ -72,18 +72,18 @@ jobs:
         run: |
           nix-build --max-jobs 1 --cores 2 default.nix --keep-going 2>&1 | tee build.log
 
-     - name: Check for failed builds
-       run: |
-         # Extract failed packages
-         grep -oE 'removing.*' build.log | sort -u > failed.txt
+      - name: Check for failed builds
+        run: |
+          # Extract failed packages
+          grep -oE 'removing.*' build.log | sort -u > failed.txt
 
-         if [ -s failed.txt ]; then
-           echo "Some packages failed to build:"
-           cat failed.txt
-           exit 1
-         else
-           echo "All packages built successfully."
-         fi
+          if [ -s failed.txt ]; then
+            echo "Some packages failed to build:"
+            cat failed.txt
+            exit 1
+          else
+            echo "All packages built successfully."
+          fi
 
 #  clone-and-open-pr:
 #      name: Clone rix and open PR

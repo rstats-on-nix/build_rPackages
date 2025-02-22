@@ -3,7 +3,7 @@ name: build_rPackages
 on:
   push:
     branches:
-      - [main, master]
+      - master
 
 jobs:
   build-on-ubuntu:

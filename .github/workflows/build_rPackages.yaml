@@ -36,10 +36,18 @@ jobs:
       - name: Build on date ${{ github.event.client_payload.ref_name }} (default1.nix)
         run: |
           nix-build --max-jobs 1 --cores 2 default1.nix --keep-going 2>&1 | tee -a build-linux.log
+          if [ $? -ne 0 ]; then
+            echo "nix-build failed to build one or more dependencies."
+            exit 1
+          fi
 
       - name: Build on date ${{ github.event.client_payload.ref_name }} (default2.nix)
         run: |
           nix-build --max-jobs 1 --cores 2 default2.nix --keep-going 2>&1 | tee -a build-linux.log
+          if [ $? -ne 0 ]; then
+            echo "nix-build failed to build one or more dependencies."
+            exit 1
+          fi
 
       - name: Upload build log
         uses: actions/upload-artifact@v4
@@ -72,11 +80,19 @@ jobs:
 
       - name: Build on date ${{ github.event.client_payload.ref_name }} (default1.nix)
         run: |
-          nix-build --max-jobs 1 --cores 2 default1.nix --keep-going 2>&1 | tee -a build-darwin.log
+          nix-build --max-jobs 1 --cores 2 default1.nix --keep-going 2>&1 | tee -a build-linux.log
+          if [ $? -ne 0 ]; then
+            echo "nix-build failed to build one or more dependencies."
+            exit 1
+          fi
 
       - name: Build on date ${{ github.event.client_payload.ref_name }} (default2.nix)
         run: |
-          nix-build --max-jobs 1 --cores 2 default2.nix --keep-going 2>&1 | tee -a build-darwin.log
+          nix-build --max-jobs 1 --cores 2 default2.nix --keep-going 2>&1 | tee -a build-linux.log
+          if [ $? -ne 0 ]; then
+            echo "nix-build failed to build one or more dependencies."
+            exit 1
+          fi
 
       - name: Upload build log
         uses: actions/upload-artifact@v4

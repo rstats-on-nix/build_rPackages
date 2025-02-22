@@ -63,7 +63,6 @@ jobs:
       - name: Check for failed builds
         run: |
           # Extract failed packages
-          cd logs
           grep -oE 'removing.*' logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u > failed.txt
           if [ -s failed.txt ]; then
             echo "Some packages failed to build:"
@@ -135,7 +134,6 @@ jobs:
       - name: Check for failed builds
         run: |
           # Extract failed packages
-          cd logs/${{ env.branch_date }}
           grep -oE 'removing.*' logs/build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u > failed.txt
           if [ -s failed.txt ]; then
             echo "Some packages failed to build:"

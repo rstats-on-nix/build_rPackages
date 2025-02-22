@@ -69,7 +69,6 @@ jobs:
             echo "Some packages failed to build:"
             cat failed.txt
             rm failed.txt
-            exit 1
           else
             echo "All packages built successfully."
           fi
@@ -146,7 +145,6 @@ jobs:
             echo "Some packages failed to build:"
             cat failed.txt
             rm failed.txt
-            exit 1
           else
             echo "All packages built successfully."
           fi

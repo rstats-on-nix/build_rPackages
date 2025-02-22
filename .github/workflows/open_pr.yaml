@@ -1,12 +1,10 @@
 name: Open PR
 
 on:
-  workflow_run:
-    workflows:
-      - "Build rPackages1"
-      - "Build rPackages2"
-    types:
-      - completed
+  push:
+    branches: [master, main]
+  schedule:
+    - cron: '0 12 * * 2' # only run on tuesday to let other workflows finish
 
 jobs:
   clone-and-open-pr:

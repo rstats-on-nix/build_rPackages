@@ -2,8 +2,9 @@ name: build_rPackages
 
 on:
   push:
-    branches:
-      - master
+    branches: [master, main]
+  schedule:
+    - cron: '0 12 * * 1'
 
 jobs:
   build-on-ubuntu:
@@ -12,6 +13,11 @@ jobs:
       GITHUB_PAT: ${{ secrets.MY_PAT }}
       GITHUB_TOKEN: ${{ secrets.MY_PAT }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/cachix-action@v15
+        with:
+          name: rstats-on-nix
 
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -46,7 +52,7 @@ jobs:
 
 
   build-on-macos:
-    name: Trigger build for available dates on macOS
+    name: Trigger build for available dates on aarch64-darwin
     runs-on: macos-latest
     needs: build-on-ubuntu
 

@@ -5,7 +5,7 @@ let
 };
  r_packages = builtins.attrValues {
   inherit (pkgs.rPackages)
-    dplyr tergo gifski vol2birdR
+    dplyr tergo 
     ;
 };
  wrapped_pkgs = pkgs.rWrapper.override {

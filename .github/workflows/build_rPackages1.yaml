@@ -39,7 +39,7 @@ jobs:
             rix(
               r_ver = \"2025-02-17\",
               r_pkgs = agg$package,
-              ide = \"none\",
+              ide = \"other\",
               project_path = \".\",
               overwrite = TRUE,
               print = FALSE
@@ -97,7 +97,7 @@ jobs:
             rix(
               r_ver = \"2025-02-17\",
               r_pkgs = agg$package,
-              ide = \"none\",
+              ide = \"other\",
               project_path = \".\",
               overwrite = TRUE,
               print = FALSE

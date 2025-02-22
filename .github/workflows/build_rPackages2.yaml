@@ -79,13 +79,9 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          if [ -n "$(git status --porcelain logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log)" ]; then
-            git add logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log
-            git commit -m "Updated linux build logs"
-            git push
-          else
-            echo "No changes to commit."
-          fi
+          git add logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log
+          git commit -m "Updated linux build logs"
+          git push
 
   build-on-macos:
     runs-on: macos-latest
@@ -155,11 +151,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          if [ -n "$(git status --porcelain logs/build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log)" ]; then
-            git add logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log
-            git commit -m "Updated darwin build logs"
-            git push
-          else
-            echo "No changes to commit."
-          fi
+          git add logs/build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log
+          git commit -m "Updated darwin build logs"
+          git push
 

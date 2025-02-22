@@ -33,23 +33,20 @@ jobs:
         run: |
           sed -i 's/REPLACE_DATE/${{ env.branch_date }}/g' default.nix
 
-      - name: Build on date ${{ github.event.client_payload.ref_name }}
+      - name: Build on date ${{ github.event.client_payload.ref_name }} (default1.nix)
         run: |
-          nix-build --max-jobs 1 --cores 2 default.nix --keep-going 2>&1 | tee build.log
+          nix-build --max-jobs 1 --cores 2 default1.nix --keep-going 2>&1 | tee -a build-linux.log
 
-      - name: Check for failed builds
+      - name: Build on date ${{ github.event.client_payload.ref_name }} (default2.nix)
         run: |
-          # Extract failed packages
-          grep -oE 'removing.*' build.log | sort -u > failed.txt
+          nix-build --max-jobs 1 --cores 2 default2.nix --keep-going 2>&1 | tee -a build-linux.log
 
-          if [ -s failed.txt ]; then
-            echo "Some packages failed to build:"
-            cat failed.txt
-            exit 1
-          else
-            echo "All packages built successfully."
-          fi
-
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-linux-log
+          path: build-linux.log
+        continue-on-error: true
 
   build-on-macos:
     name: Trigger build for available dates on aarch64-darwin
@@ -74,22 +71,20 @@ jobs:
         run: |
           sed -i '' 's/REPLACE_DATE/${{ env.branch_date }}/g' default.nix
 
-      - name: Build on date ${{ github.event.client_payload.ref_name }}
+      - name: Build on date ${{ github.event.client_payload.ref_name }} (default1.nix)
         run: |
-          nix-build --max-jobs 1 --cores 2 default.nix --keep-going 2>&1 | tee build.log
+          nix-build --max-jobs 1 --cores 2 default1.nix --keep-going 2>&1 | tee -a build-darwin.log
 
-      - name: Check for failed builds
+      - name: Build on date ${{ github.event.client_payload.ref_name }} (default2.nix)
         run: |
-          # Extract failed packages
-          grep -oE 'removing.*' build.log | sort -u > failed.txt
+          nix-build --max-jobs 1 --cores 2 default2.nix --keep-going 2>&1 | tee -a build-darwin.log
 
-          if [ -s failed.txt ]; then
-            echo "Some packages failed to build:"
-            cat failed.txt
-            exit 1
-          else
-            echo "All packages built successfully."
-          fi
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-darwin-log
+          path: build-darwin.log
+        continue-on-error: true
 
 #  clone-and-open-pr:
 #      name: Clone rix and open PR

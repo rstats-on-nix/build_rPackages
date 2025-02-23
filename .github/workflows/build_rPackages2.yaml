@@ -34,24 +34,31 @@ jobs:
 
       - name: Set up R and rix
         run: |
-          nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
-            agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 1000);
-            colnames(agg) <- c(\"package\", \"N\");
-            pkgs <- agg[[\"package\"]];
-            rix(
-              date = \"2025-02-17\",
-              r_pkgs = pkgs,
-              ide = \"other\",
-              project_path = \".\",
-              overwrite = TRUE,
-              print = TRUE
-            )"'
+          nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e
+          "library(data.table);library(jsonlite);library(rix);
+          # Get broken packages
+          cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
+          df <- rbindlist(lapply(cran_json[[\"packages\"]], as.data.table), fill = TRUE);
+          broken_pkgs <- unique(df[broken == TRUE, name]);
+          # Remove broken packages from list
+          agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 1000);
+          colnames(agg) <- c(\"package\", \"N\");
+          pkgs <- agg[[\"package\"]];
+          pkgs <- setdiff(pkgs, broken_pkgs);
+          rix(
+            date = \"2025-02-17\",
+            r_pkgs = pkgs,
+            ide = \"other\",
+            project_path = \".\",
+            overwrite = TRUE,
+            print = TRUE
+          )"'
 
       - name: Update default.nix
         run: |
           sed -i 's/2025-02-17/${{ env.branch_date }}/g' default.nix
 
-      - name: Build on date ${{ github.event.client_payload.ref_name }} 
+      - name: Build on date ${{ github.event.client_payload.ref_name }}
         run: |
           nix-build --max-jobs 2 --cores 2 default.nix --keep-going 2>&1 | tee -a build-linux-${{ env.branch_date }}-${{ github.run_id }}.log
 

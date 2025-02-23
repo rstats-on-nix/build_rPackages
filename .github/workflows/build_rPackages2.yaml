@@ -34,8 +34,7 @@ jobs:
 
       - name: Set up R and rix
         run: |
-          nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e
-          "library(data.table);library(jsonlite);library(rix);
+          nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);
           # Get broken packages
           cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
           df <- rbindlist(lapply(cran_json[[\"packages\"]], as.data.table), fill = TRUE);

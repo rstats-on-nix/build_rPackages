@@ -9,6 +9,8 @@ process_packages <- function(cran_json, default_nix, agg) {
   agg <- agg[N > 3000] # 100 downloads per day
   agg[package == "import", package := "r_import"] #change in place
   agg[package != "seasonal"] # this pulls x13binary which is broken
+  agg[package != "x12"] # this pulls x13binary which is broken
+  agg[package != "gunsales"] # this pulls x13binary which is broken
 
   # Get broken packages from default.nix
   start <- grep("brokenPackages =", default_nix)

@@ -2,7 +2,7 @@ library(data.table)
 library(jsonlite)
 library(rix)
 
-process_packages <- function(cran_json, default_nix) {
+process_packages <- function(cran_json, default_nix, agg) {
   # Get broken packages from JSON
   df <- rbindlist(lapply(cran_json[["packages"]], as.data.table), fill = TRUE)
   broken_pkgs <- unique(df[broken == TRUE, name])
@@ -21,7 +21,6 @@ process_packages <- function(cran_json, default_nix) {
   }
 
   # Remove broken packages from list
-  agg <- read.csv("aggregated_counts.csv", nrows = 500)
   colnames(agg) <- c("package", "N")
   pkgs <- setdiff(setdiff(agg[["package"]], broken_pkgs), brokenPackages)
 

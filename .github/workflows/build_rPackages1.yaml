@@ -38,7 +38,8 @@ jobs:
           # Get broken packages
           cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
           default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");
-          process_packages(cran_json, default_nix)
+          agg <- read.csv(\"aggregated_counts.csv\", nrows = 500);
+          process_packages(cran_json, default_nix, agg)
           "'
 
       - name: Update default.nix

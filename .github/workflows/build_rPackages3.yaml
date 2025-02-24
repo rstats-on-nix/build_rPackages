@@ -38,7 +38,7 @@ jobs:
           cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
           default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");
           agg <- fread(\"aggregated_counts.csv\", skip = 1000, nrows = 1500);
-          colnames(agg) <- c(\"package\", "N");
+          colnames(agg) <- c(\"package\", \"N\");
           process_packages(cran_json, default_nix, agg)
           "'
 

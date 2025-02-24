@@ -1,0 +1,25 @@
+* removing ‘/nix/store/95bzdk0j4lpw0fw0yvha3dicld9hlc57-r-RNetCDF-2.9-2/library/RNetCDF’
+       > * removing ‘/nix/store/95bzdk0j4lpw0fw0yvha3dicld9hlc57-r-RNetCDF-2.9-2/library/RNetCDF’
+* removing ‘/nix/store/h7w625krwjchvjvbl90z22la93r8gsjq-r-ROracle-1.3-1.1/library/ROracle’
+       > * removing ‘/nix/store/h7w625krwjchvjvbl90z22la93r8gsjq-r-ROracle-1.3-1.1/library/ROracle’
+* removing ‘/nix/store/svf158056swrradnznvxlxk4bmgrrm0b-r-Rmpi-0.7-3.3/library/Rmpi’
+       > * removing ‘/nix/store/svf158056swrradnznvxlxk4bmgrrm0b-r-Rmpi-0.7-3.3/library/Rmpi’
+* removing ‘/nix/store/q3rfk212fbixqfxblx5jbhi6vpbx76a6-r-mongolite-3.0.1/library/mongolite’
+       > * removing ‘/nix/store/q3rfk212fbixqfxblx5jbhi6vpbx76a6-r-mongolite-3.0.1/library/mongolite’
+* removing ‘/nix/store/rjnhlazdkjfxaqvw8mams264wpvhw2fr-r-pdftools-3.4.1/library/pdftools’
+       > * removing ‘/nix/store/rjnhlazdkjfxaqvw8mams264wpvhw2fr-r-pdftools-3.4.1/library/pdftools’
+* removing ‘/nix/store/11iawywf7rb1qmd6zasx2f5ibm5pkz65-r-geoR-1.9-4/library/geoR’
+       > * removing ‘/nix/store/11iawywf7rb1qmd6zasx2f5ibm5pkz65-r-geoR-1.9-4/library/geoR’
+* removing ‘/nix/store/rgax31d5pliypjyrawmm5348nk0wwmc5-r-tcltk2-1.2-11/library/tcltk2’
+       > * removing ‘/nix/store/rgax31d5pliypjyrawmm5348nk0wwmc5-r-tcltk2-1.2-11/library/tcltk2’
+* removing ‘/nix/store/8blhfir1b7nanpv890gmdsplfkahfsgx-r-tkrplot-0.0-27/library/tkrplot’
+       > * removing ‘/nix/store/8blhfir1b7nanpv890gmdsplfkahfsgx-r-tkrplot-0.0-27/library/tkrplot’
+removing debugging flags
+* removing ‘/nix/store/4hppy4711zj9mc2d8dwaj8gxlw1864j2-r-enrichR-3.4/library/enrichR’
+       > * removing ‘/nix/store/4hppy4711zj9mc2d8dwaj8gxlw1864j2-r-enrichR-3.4/library/enrichR’
+* removing ‘/nix/store/pcwjb9nddjix53ycsnmailwdnanz4hiy-r-Factoshiny-2.7/library/Factoshiny’
+       > * removing ‘/nix/store/pcwjb9nddjix53ycsnmailwdnanz4hiy-r-Factoshiny-2.7/library/Factoshiny’
+* removing ‘/nix/store/byxmcvb3dqmlja2r1yhl0k605az3l354-r-xslt-1.5.0/library/xslt’
+       > * removing ‘/nix/store/byxmcvb3dqmlja2r1yhl0k605az3l354-r-xslt-1.5.0/library/xslt’
+* removing ‘/nix/store/kiricvsirx5bxjz2q5dw8g5sq1zs02vp-r-gsubfn-0.7/library/gsubfn’
+       > * removing ‘/nix/store/kiricvsirx5bxjz2q5dw8g5sq1zs02vp-r-gsubfn-0.7/library/gsubfn’

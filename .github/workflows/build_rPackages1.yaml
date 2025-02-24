@@ -37,7 +37,7 @@ jobs:
           nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);source(\"process_packages.R\");
           cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
           default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");
-          agg <- read.csv(\"aggregated_counts.csv\", nrows = 500);
+          agg <- fread(\"aggregated_counts.csv\", nrows = 500, header = TRUE);
           process_packages(cran_json, default_nix, agg)
           "'
 
@@ -105,7 +105,7 @@ jobs:
           nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);source(\"process_packages.R\");
           cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
           default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");
-          agg <- read.csv(\"aggregated_counts.csv\", nrows = 500);
+          agg <- fread(\"aggregated_counts.csv\", nrows = 500, header = TRUE);
           process_packages(cran_json, default_nix, agg)
           "'
 

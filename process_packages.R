@@ -17,6 +17,7 @@ process_packages <- function(cran_json, default_nix, agg) {
     brokenPackages <- trimws(default_nix[(start + 1):(end - 1)])
     brokenPackages <- gsub("_", ".", brokenPackages)
     brokenPackages <- grep("^\\s*#", brokenPackages, value = TRUE, invert = TRUE)
+    brokenPackages <- gsub('[" ]', "", brokenPackages)  # Remove quotes and spaces
   } else {
     brokenPackages <- character(0)
   }
@@ -32,6 +33,7 @@ process_packages <- function(cran_json, default_nix, agg) {
       packagesRequiringX <- trimws(default_nix[(start + 1):(end - 1)])
       packagesRequiringX <- gsub("_", ".", packagesRequiringX)
       packagesRequiringX <- grep("^\\s*#", packagesRequiringX, value = TRUE, invert = TRUE)
+      packagesRequiringX <- gsub('[" ]', "", packagesRequiringX)  # Remove quotes and spaces
     } else {
       packagesRequiringX <- character(0)
     }

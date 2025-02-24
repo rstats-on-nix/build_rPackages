@@ -34,6 +34,8 @@ jobs:
 
       - name: Set up R and rix
         run: |
+          export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
+          export NIXPKGS_ALLOW_UNFREE=1
           nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);source(\"process_packages.R\");
           cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
           default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");
@@ -100,6 +102,8 @@ jobs:
 
       - name: Set up R and rix
         run: |
+          export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
+          export NIXPKGS_ALLOW_UNFREE=1
           nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);source(\"process_packages.R\");
           cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
           default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");

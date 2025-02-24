@@ -34,24 +34,12 @@ jobs:
 
       - name: Set up R and rix
         run: |
-          nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);
-          # Get broken packages
+          nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);source(\"process_packages.R\");
           cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
-          df <- rbindlist(lapply(cran_json[[\"packages\"]], as.data.table), fill = TRUE);
-          broken_pkgs <- unique(df[broken == TRUE, name]);
-          # Remove broken packages from list
-          agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 1000);
-          colnames(agg) <- c(\"package\", \"N\");
-          pkgs <- agg[[\"package\"]];
-          pkgs <- setdiff(pkgs, broken_pkgs);
-          rix(
-            date = \"2025-02-17\",
-            r_pkgs = pkgs,
-            ide = \"other\",
-            project_path = \".\",
-            overwrite = TRUE,
-            print = TRUE
-          )"'
+          default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");
+          agg <- read.csv(\"aggregated_counts.csv\", skip = 499, nrows = 501);
+          process_packages(cran_json, default_nix, agg)
+          "'
 
       - name: Update default.nix
         run: |
@@ -112,18 +100,12 @@ jobs:
 
       - name: Set up R and rix
         run: |
-          nix-shell -p R rPackages.rix --run 'Rscript -e "library(rix);
-            agg <- read.csv(\"aggregated_counts.csv\", skip = 500, nrows = 1000);
-            colnames(agg) <- c(\"package\", \"N\");
-            pkgs <- agg[[\"package\"]];
-            rix(
-              date = \"2025-02-17\",
-              r_pkgs = pkgs,
-              ide = \"other\",
-              project_path = \".\",
-              overwrite = TRUE,
-              print = TRUE
-            )"'
+          nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);source(\"process_packages.R\");
+          cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
+          default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");
+          agg <- read.csv(\"aggregated_counts.csv\", skip = 499, nrows = 501);
+          process_packages(cran_json, default_nix, agg)
+          "'
 
       - name: Update default.nix
         run: |

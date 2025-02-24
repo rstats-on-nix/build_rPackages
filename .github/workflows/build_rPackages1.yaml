@@ -59,7 +59,7 @@ jobs:
       - name: Check for failed builds
         run: |
           # Extract failed packages
-          sed -i -n -E 's/removing.*/\1/p' logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u | tee failed.txt
+          sed -i -E '/removing.*/!d' logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log && sort -u logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log | tee failed.txt
           if [ -s failed.txt ]; then
             echo "Some packages failed to build:"
             cat failed.txt
@@ -127,7 +127,7 @@ jobs:
       - name: Check for failed builds
         run: |
           # Extract failed packages
-          sed -i '' -n -E 's/removing.*/\1/p' logs/build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u | tee failed.txt
+          sed -i '' -E '/removing.*/!d' logs/build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u | tee failed.txt
           if [ -s failed.txt ]; then
             echo "Some packages failed to build:"
             cat failed.txt

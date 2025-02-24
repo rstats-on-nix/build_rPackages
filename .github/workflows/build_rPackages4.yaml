@@ -1,0 +1,151 @@
+name: build_rPackages top 1500++
+
+on:
+  push:
+    branches: [master, main]
+  schedule:
+    - cron: '0 12 * * 1'
+
+jobs:
+  build-on-ubuntu:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.MY_PAT }}
+      GITHUB_TOKEN: ${{ secrets.MY_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/cachix-action@v15
+        with:
+          name: rstats-on-nix
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set branch_date as today
+        id: set_date
+        run: echo "branch_date=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Check date
+        run: echo ${{ env.branch_date }}
+
+      - name: Download top CRAN packages
+        run: wget https://raw.githubusercontent.com/rstats-on-nix/top_cran_monthly/refs/heads/master/aggregated_counts.csv
+
+      - name: Set up R and rix
+        run: |
+          nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);source(\"process_packages.R\");
+          cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
+          default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");
+          agg <- fread(\"aggregated_counts.csv\", skip = 1500, header = TRUE);
+          colnames(agg) <- c(\"package\", \"N\");
+          process_packages(cran_json, default_nix, agg)
+          "'
+
+      - name: Update default.nix
+        run: |
+          sed -i 's/2025-02-17/${{ env.branch_date }}/g' default.nix
+
+      - name: Build on date ${{ github.event.client_payload.ref_name }} 
+        run: |
+          export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
+          export NIXPKGS_ALLOW_UNFREE=1
+          nix-build --max-jobs 2 --cores 2 default.nix --keep-going 2>&1 | tee -a build-linux-${{ env.branch_date }}-${{ github.run_id }}.log
+
+      - name: Move log to dated folder
+        run: |
+          mkdir -p logs
+          mv build-linux-${{ env.branch_date }}-${{ github.run_id }}.log logs
+
+      - name: Check for failed builds
+        run: |
+          # Extract failed packages
+          grep -oE 'removing.*' logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u > failed.txt
+          if [ -s failed.txt ]; then
+            echo "Some packages failed to build:"
+            cat failed.txt
+            rm failed.txt
+          else
+            echo "All packages built successfully."
+          fi
+
+      - name: Commit and push log
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git pull --rebase origin master
+          git add logs/build-linux-${{ env.branch_date }}-${{ github.run_id }}.log
+          git commit -m "Updated linux build logs"
+          git push
+
+  build-on-macos:
+    runs-on: macos-latest
+    needs: build-on-ubuntu
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/cachix-action@v15
+        with:
+          name: rstats-on-nix
+
+      - name: Set branch_date as today
+        id: set_date
+        run: echo "branch_date=$(date '+%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Check date
+        run: echo ${{ env.branch_date }}
+
+      - name: Download top CRAN packages
+        run: wget https://raw.githubusercontent.com/rstats-on-nix/top_cran_monthly/refs/heads/master/aggregated_counts.csv
+
+      - name: Set up R and rix
+        run: |
+          nix-shell -p R rPackages.rix rPackages.data_table rPackages.jsonlite --run 'Rscript -e "library(data.table);library(jsonlite);library(rix);source(\"process_packages.R\");
+          cran_json <- fromJSON(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/cran-packages.json\");
+          default_nix <- readLines(\"https://raw.githubusercontent.com/rstats-on-nix/nixpkgs/refs/heads/${{ env.branch_date }}/pkgs/development/r-modules/default.nix\");
+          agg <- fread(\"aggregated_counts.csv\", skip = 1500, header = TRUE);
+          colnames(agg) <- c(\"package\", \"N\");
+          process_packages(cran_json, default_nix, agg)
+          "'
+
+      - name: Update default.nix
+        run: |
+          sed -i '' 's/2025-02-17/${{ env.branch_date }}/g' default.nix
+
+      - name: Build on date ${{ github.event.client_payload.ref_name }}
+        run: |
+          export NIXPKGS_ALLOW_UNSUPPORTED_SYSTEM=1
+          export NIXPKGS_ALLOW_UNFREE=1
+          nix-build --max-jobs 2 --cores 2 default.nix --keep-going 2>&1 | tee -a build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log
+
+      - name: Move log to dated folder
+        run: |
+          mkdir -p logs
+          mv build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log logs
+
+      - name: Check for failed builds
+        run: |
+          # Extract failed packages
+          grep -oE 'removing.*' logs/build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log | sort -u > failed.txt
+          if [ -s failed.txt ]; then
+            echo "Some packages failed to build:"
+            cat failed.txt
+            rm failed.txt
+          else
+            echo "All packages built successfully."
+          fi
+
+      - name: Commit and push log
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git pull --rebase origin master
+          git add logs/build-darwin-${{ env.branch_date }}-${{ github.run_id }}.log
+          git commit -m "Updated darwin build logs"
+          git push
+

@@ -20,9 +20,27 @@ process_packages <- function(cran_json, default_nix, agg) {
     brokenPackages <- character(0)
   }
 
-  # Remove broken packages from list
+  system_os <- Sys.info()["sysname"]
+  if (system_os == "Darwin") {
+  # Get packagesRequiringX  from default.nix
+    start <- grep("packagesRequiringX =", default_nix)
+    end <- which(grepl("\\];", default_nix)) 
+    end <- end[end > start][1]
+
+    if (length(start) > 0 && length(end) > 0) {
+      packagesRequiringX <- trimws(default_nix[(start + 1):(end - 1)])
+      packagesRequiringX <- gsub("_", ".", packagesRequiringX)
+      packagesRequiringX <- grep("^\\s*#", packagesRequiringX, value = TRUE, invert = TRUE)
+    } else {
+      packagesRequiringX <- character(0)
+    }
+  } else {
+    packagesRequiringX <- character(0)
+  }
+  
+  # Remove broken packages from list and packages requiring X (for darwin)
   colnames(agg) <- c("package", "N")
-  pkgs <- setdiff(setdiff(agg[["package"]], broken_pkgs), brokenPackages)
+  pkgs <- setdiff(setdiff(setdiff(agg[["package"]], broken_pkgs), brokenPackages), packagesRequiringX)
 
   # Run rix
   rix(

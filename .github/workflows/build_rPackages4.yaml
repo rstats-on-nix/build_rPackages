@@ -1,4 +1,4 @@
-name: build_rPackages top 1500++
+name: build_rPackages top 1500 to 2000
 
 on:
   push:

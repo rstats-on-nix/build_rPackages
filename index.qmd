@@ -47,6 +47,6 @@ reactable::reactable(build_failures,
 
 ```
 
-Source code: https://github.com/b-rodrigues/build_rPackages
+Source code: [https://github.com/rstats-on-nix/build_rPackages](https://github.com/rstats-on-nix/build_rPackages)
 
 Rendered last: `r Sys.time()`

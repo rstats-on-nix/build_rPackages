@@ -32,19 +32,15 @@ build_failures <- lapply(all_logs, log_to_df) |>
   do.call(rbind, args = _) |>
   subset(pkg != "removing debugging flags") |>
   unique()
-
-
-
 ```
 
 
 ```{r, echo = FALSE}
 reactable::reactable(build_failures,
-  defaultSorted = "platform",
+  defaultSorted = list(platform = "desc", build_date = "desc"),
   defaultPageSize = 50,
   filterable = TRUE
 )
-
 ```
 
 Source code: [https://github.com/rstats-on-nix/build_rPackages](https://github.com/rstats-on-nix/build_rPackages)

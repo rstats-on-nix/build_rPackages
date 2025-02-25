@@ -86,7 +86,7 @@ jobs:
           for i in {1..5}; do
             git stash push -m "temp-changes" || true # in case there's other changes
             git pull --rebase origin master || true
-            git push origin main && break
+            git push origin master && break
             echo "Retrying in 5 seconds..."
             sleep 5
           done
@@ -166,7 +166,7 @@ jobs:
           for i in {1..5}; do
             git stash push -m "temp-changes" || true # in case there's other changes
             git pull --rebase origin master || true
-            git push origin main && break
+            git push origin master && break
             echo "Retrying in 5 seconds..."
             sleep 5
           done

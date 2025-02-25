@@ -35,6 +35,14 @@ jobs:
         run: |
           nix-build shell.nix
 
+      - name: Rebase latest changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git pull --rebase origin master || true
+
       - name: Quarto Render table
         run: |
           nix-shell shell.nix --run "quarto render index.qmd"
@@ -45,7 +53,7 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
+          git add docs/*
           git commit -m "Rendered table"
           git push origin master
   

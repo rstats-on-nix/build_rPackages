@@ -1,0 +1,51 @@
+---
+title: "Top 2000 CRAN packages Nix build results"
+format: html_document
+---
+
+```{r, include = FALSE}
+
+all_logs <- list.files("logs/", full.names = TRUE)
+
+log_to_df <- function(one_log){
+  platform <- if(grepl("darwin", one_log)) "darwin" else "linux"
+  build_date <- regmatches(one_log, regexpr("\\d{4}-\\d{2}-\\d{2}", one_log))
+  lines <- readLines(one_log)
+
+  pkg_names <- sub("^.*library/", "", lines)
+  pkg_names <- gsub("’|'", "", pkg_names)
+  pkg_names <- unique(pkg_names[nzchar(pkg_names)])
+
+  if(length(pkg_names) == 0){
+    out <- NULL
+  } else {
+    out <- data.frame(
+      list("pkg" = pkg_names,
+           "platform" = platform,
+           "build_date" = build_date)
+    )
+  }
+  out
+}
+
+build_failures <- lapply(all_logs, log_to_df) |>
+  do.call(rbind, args = _) |>
+  subset(pkg != "removing debugging flags") |>
+  unique()
+
+
+
+```
+
+
+```{r, echo = FALSE}
+reactable::reactable(build_failures,
+  defaultSorted = "darwin",
+  filterable = TRUE
+)
+
+```
+
+Source code: https://github.com/b-rodrigues/build_rPackages
+
+Rendered last: `r Sys.time()`

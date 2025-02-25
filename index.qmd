@@ -41,6 +41,7 @@ build_failures <- lapply(all_logs, log_to_df) |>
 ```{r, echo = FALSE}
 reactable::reactable(build_failures,
   defaultSorted = "platform",
+  defaultPageSize = 4,
   filterable = TRUE
 )
 

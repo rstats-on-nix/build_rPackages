@@ -6,7 +6,7 @@ process_packages <- function(cran_json, default_nix, agg) {
   # Get broken packages from JSON
   df <- rbindlist(lapply(cran_json[["packages"]], as.data.table), fill = TRUE)
   broken_pkgs <- unique(df[broken == TRUE, name])
-  agg <- agg[N > 3000] # 100 downloads per day
+  agg <- agg[N > 6000] # 200 downloads per day
   agg[package == "import", package := "r_import"] #change in place
   
   # Get broken packages from default.nix

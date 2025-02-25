@@ -8,7 +8,8 @@ process_packages <- function(cran_json, default_nix, agg) {
   broken_pkgs <- unique(df[broken == TRUE, name])
   agg <- agg[N > 1500] # 50 downloads per day
   agg[package == "import", package := "r_import"] #change in place
-  
+  agg <- agg[package != "VR"] # VR gets added, even though it’s not on CRAN anymore
+
   # Get broken packages from default.nix
   start <- grep("brokenPackages =", default_nix)
   end <- which(grepl("\\];", default_nix)) 

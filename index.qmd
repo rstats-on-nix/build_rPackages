@@ -1,6 +1,6 @@
 ---
 title: "Top 2000 CRAN packages Nix build results"
-format: html_document
+format: html
 ---
 
 ```{r, include = FALSE}

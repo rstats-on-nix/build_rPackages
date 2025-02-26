@@ -1,5 +1,5 @@
 ---
-title: "Top 2000 CRAN packages Nix build failures"
+title: "Top 2500 CRAN packages Nix build failures"
 format: html
 ---
 

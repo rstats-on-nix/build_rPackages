@@ -51,7 +51,7 @@ process_packages <- function(cran_json, default_nix, agg) {
   rix(
     date = "2025-02-17",
     r_pkgs = pkgs,
-    ide = "other",
+    ide = "none",
     project_path = ".",
     overwrite = TRUE,
     print = TRUE

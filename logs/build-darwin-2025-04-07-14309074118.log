@@ -1,0 +1,37 @@
+* removing ‘/nix/store/68vdzakkypppi9qcl2vla52hg5lb24mi-r-RNetCDF-2.9-2/library/RNetCDF’
+       > * removing ‘/nix/store/68vdzakkypppi9qcl2vla52hg5lb24mi-r-RNetCDF-2.9-2/library/RNetCDF’
+* removing ‘/nix/store/zw4hj62yg8y4gglgp1bi1xvgk7sflk83-r-ROracle-1.3-1.1/library/ROracle’
+       > * removing ‘/nix/store/zw4hj62yg8y4gglgp1bi1xvgk7sflk83-r-ROracle-1.3-1.1/library/ROracle’
+* removing ‘/nix/store/1akaprj32klwvr60fh3ifcbbb71vm6h8-r-Rblpapi-0.3.16/library/Rblpapi’
+       > * removing ‘/nix/store/1akaprj32klwvr60fh3ifcbbb71vm6h8-r-Rblpapi-0.3.16/library/Rblpapi’
+* removing ‘/nix/store/kmhbz2v33il1nf0ik00kfn2xa9621v87-r-Rmpi-0.7-3.3/library/Rmpi’
+       > * removing ‘/nix/store/kmhbz2v33il1nf0ik00kfn2xa9621v87-r-Rmpi-0.7-3.3/library/Rmpi’
+* removing ‘/nix/store/pkdf4f6liysm1qxnjga8w0nmf1q94xck-r-brotli-1.3.2/library/brotli’
+       > * removing ‘/nix/store/pkdf4f6liysm1qxnjga8w0nmf1q94xck-r-brotli-1.3.2/library/brotli’
+* removing ‘/nix/store/pv64l04q464cwxi0ajhfcw86k66lav3y-r-cem-1.1.31/library/cem’
+       > * removing ‘/nix/store/pv64l04q464cwxi0ajhfcw86k66lav3y-r-cem-1.1.31/library/cem’
+* removing ‘/nix/store/nyx8hcd5nmvg3mhi8nk8v5vrrd26pzr2-r-enrichR-3.4/library/enrichR’
+       > * removing ‘/nix/store/nyx8hcd5nmvg3mhi8nk8v5vrrd26pzr2-r-enrichR-3.4/library/enrichR’
+* removing ‘/nix/store/1viaydskvwlvk4pkjjsi62p321iijjig-r-fio-0.1.6/library/fio’
+       > * removing ‘/nix/store/1viaydskvwlvk4pkjjsi62p321iijjig-r-fio-0.1.6/library/fio’
+* removing ‘/nix/store/qxq8m7qvzvd32fpcdwlkgckvx335m98j-r-misc3d-0.9-1/library/misc3d’
+       > * removing ‘/nix/store/qxq8m7qvzvd32fpcdwlkgckvx335m98j-r-misc3d-0.9-1/library/misc3d’
+* removing ‘/nix/store/bmjz7glxla1c3m0kpznbk6hq8yxb2mx1-r-mongolite-4.0.0/library/mongolite’
+       > * removing ‘/nix/store/bmjz7glxla1c3m0kpznbk6hq8yxb2mx1-r-mongolite-4.0.0/library/mongolite’
+* removing ‘/nix/store/jjzx4qgn4kwq0mf0q1xzbprp3ry07dpi-r-nanonext-1.5.2/library/nanonext’
+       > * removing ‘/nix/store/jjzx4qgn4kwq0mf0q1xzbprp3ry07dpi-r-nanonext-1.5.2/library/nanonext’
+removing debugging flags
+* removing ‘/nix/store/hgmqzi2pxpyras1q8nww9p458znbnl0n-r-pdftools-3.5.0/library/pdftools’
+       > * removing ‘/nix/store/hgmqzi2pxpyras1q8nww9p458znbnl0n-r-pdftools-3.5.0/library/pdftools’
+* removing ‘/nix/store/ywwx7f50nnjpkhbp2h50xjzbn4lzs8r9-r-ade4TkGUI-0.3.4/library/ade4TkGUI’
+       > * removing ‘/nix/store/ywwx7f50nnjpkhbp2h50xjzbn4lzs8r9-r-ade4TkGUI-0.3.4/library/ade4TkGUI’
+* removing ‘/nix/store/834brc2h2103j9zk8bn6znxbk2zi4098-r-geoR-1.9-4/library/geoR’
+       > * removing ‘/nix/store/834brc2h2103j9zk8bn6znxbk2zi4098-r-geoR-1.9-4/library/geoR’
+* removing ‘/nix/store/xyv47ls99xkx5lhg8b9b3bkgr2yx2clk-r-tcltk2-1.2-11/library/tcltk2’
+       > * removing ‘/nix/store/xyv47ls99xkx5lhg8b9b3bkgr2yx2clk-r-tcltk2-1.2-11/library/tcltk2’
+* removing ‘/nix/store/m3b6wpqra5bg33361vfvfpi71fkhxrx4-r-Factoshiny-2.7/library/Factoshiny’
+       > * removing ‘/nix/store/m3b6wpqra5bg33361vfvfpi71fkhxrx4-r-Factoshiny-2.7/library/Factoshiny’
+* removing ‘/nix/store/8mlv0li2kg9zw9la9dpzklmjzswc911v-r-tkrplot-0.0-29/library/tkrplot’
+       > * removing ‘/nix/store/8mlv0li2kg9zw9la9dpzklmjzswc911v-r-tkrplot-0.0-29/library/tkrplot’
+* removing ‘/nix/store/mpn76d6hwm1mxxnghadkf91gv82d15j2-r-gsubfn-0.7/library/gsubfn’
+       > * removing ‘/nix/store/mpn76d6hwm1mxxnghadkf91gv82d15j2-r-gsubfn-0.7/library/gsubfn’

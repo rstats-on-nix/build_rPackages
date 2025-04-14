@@ -1,0 +1,18 @@
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+removing build/bdist.macosx-11.3-arm64/wheel
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+removing build/bdist.macosx-11.3-arm64/wheel
+* removing ‘/nix/store/2rwaw2bhg9hfjcm7zb1lbnhk44p6d9kb-r-misc3d-0.9-1/library/misc3d’
+       > * removing ‘/nix/store/2rwaw2bhg9hfjcm7zb1lbnhk44p6d9kb-r-misc3d-0.9-1/library/misc3d’
+* removing ‘/nix/store/j6bfasb882gpnfw3dcb4x3m7h68x9l14-r-pdftools-3.5.0/library/pdftools’
+       > * removing ‘/nix/store/j6bfasb882gpnfw3dcb4x3m7h68x9l14-r-pdftools-3.5.0/library/pdftools’
+* removing ‘/nix/store/pwxq5fin6qcz8ydzj7skblks07xjgbq9-r-tcltk2-1.2-11/library/tcltk2’
+       > * removing ‘/nix/store/pwxq5fin6qcz8ydzj7skblks07xjgbq9-r-tcltk2-1.2-11/library/tcltk2’
+* removing ‘/nix/store/h0f4qg7347c9nyzhk61i2078a7dsch4z-r-summarytools-1.1.3/library/summarytools’
+       > * removing ‘/nix/store/h0f4qg7347c9nyzhk61i2078a7dsch4z-r-summarytools-1.1.3/library/summarytools’
+* removing ‘/nix/store/rsdhlr0lm33szahxc2jmdp9vyzjq47nd-r-gsubfn-0.7/library/gsubfn’
+       > * removing ‘/nix/store/rsdhlr0lm33szahxc2jmdp9vyzjq47nd-r-gsubfn-0.7/library/gsubfn’
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+        Please consider removing the following classifiers in favor of a SPDX license expression:

@@ -1,0 +1,55 @@
+➤ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-musl-npm-16.10.0-13d42bb0be-8.zip appears to be unused - removing
+➤ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-musl-npm-16.10.0-13d42bb0be-8.zip appears to be unused - removing
+➤ @nx-nx-linux-x64-gnu-npm-16.10.0-0f7f7e3e4b-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-musl-npm-16.10.0-13d42bb0be-8.zip appears to be unused - removing
+➤ @nx-nx-linux-x64-gnu-npm-16.10.0-0f7f7e3e4b-8.zip appears to be unused - removing
+➤ @nx-nx-linux-x64-musl-npm-16.10.0-c249c058fe-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-musl-npm-16.10.0-13d42bb0be-8.zip appears to be unused - removing
+➤ @nx-nx-linux-x64-gnu-npm-16.10.0-0f7f7e3e4b-8.zip appears to be unused - removing
+➤ @nx-nx-linux-x64-musl-npm-16.10.0-c249c058fe-8.zip appears to be unused - removing
+➤ @nx-nx-win32-arm64-msvc-npm-16.10.0-4c8bfd2edd-8.zip appears to be unused - removing
+➤ @nx-nx-linux-arm64-musl-npm-16.10.0-13d42bb0be-8.zip appears to be unused - removing
+➤ @nx-nx-linux-x64-gnu-npm-16.10.0-0f7f7e3e4b-8.zip appears to be unused - removing
+➤ @nx-nx-linux-x64-musl-npm-16.10.0-c249c058fe-8.zip appears to be unused - removing
+➤ @nx-nx-win32-arm64-msvc-npm-16.10.0-4c8bfd2edd-8.zip appears to be unused - removing
+➤ @nx-nx-win32-x64-msvc-npm-16.10.0-acff5f6c4e-8.zip appears to be unused - removing
+➤ typescript-patch-e8424f5ae6-e14c87e8bd.zip appears to be unused - removing
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+removing build/bdist.macosx-11.3-arm64/wheel
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+* removing ‘/nix/store/p6fphjhrviz5w0m6nn3jarzi8sd54lxi-r-cem-1.1.31/library/cem’
+       > * removing ‘/nix/store/p6fphjhrviz5w0m6nn3jarzi8sd54lxi-r-cem-1.1.31/library/cem’
+* removing ‘/nix/store/l3sji5g95rq2xvffh5a9f69r8fbwkrjr-r-misc3d-0.9-1/library/misc3d’
+       > * removing ‘/nix/store/l3sji5g95rq2xvffh5a9f69r8fbwkrjr-r-misc3d-0.9-1/library/misc3d’
+* removing ‘/nix/store/l6zpipsvpiz0v3a7qq20vh953yd6s98z-r-nanonext-1.5.2/library/nanonext’
+       > * removing ‘/nix/store/l6zpipsvpiz0v3a7qq20vh953yd6s98z-r-nanonext-1.5.2/library/nanonext’
+* removing ‘/nix/store/yr7zd82kp8dyhk3ndx970qrw8zg06n8a-r-pdftools-3.5.0/library/pdftools’
+       > * removing ‘/nix/store/yr7zd82kp8dyhk3ndx970qrw8zg06n8a-r-pdftools-3.5.0/library/pdftools’
+* removing ‘/nix/store/nnjmpzig9dhzmja0wzd4nxppc69cc4si-r-tcltk2-1.2-11/library/tcltk2’
+       > * removing ‘/nix/store/nnjmpzig9dhzmja0wzd4nxppc69cc4si-r-tcltk2-1.2-11/library/tcltk2’
+* removing ‘/nix/store/y3lvhsqaz6sb7ixv5lrw6nyvjm1zns60-r-gsubfn-0.7/library/gsubfn’
+       > * removing ‘/nix/store/y3lvhsqaz6sb7ixv5lrw6nyvjm1zns60-r-gsubfn-0.7/library/gsubfn’

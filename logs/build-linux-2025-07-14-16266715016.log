@@ -1,0 +1,5 @@
+* removing '/nix/store/kd4fbl9v0sayrm3xfgvg7wylzx7hwhv7-r-dataRetrieval-2.7.19/library/dataRetrieval'
+       > * removing '/nix/store/kd4fbl9v0sayrm3xfgvg7wylzx7hwhv7-r-dataRetrieval-2.7.19/library/dataRetrieval'
+* removing '/nix/store/1gjn9n6bk3cccisjihgq5ll3xvbkgz6z-r-RcppPlanc-2.0.12/library/RcppPlanc'
+       > * removing '/nix/store/1gjn9n6bk3cccisjihgq5ll3xvbkgz6z-r-RcppPlanc-2.0.12/library/RcppPlanc'
+removing debugging flags

@@ -100,13 +100,12 @@ jobs:
       - name: Build packages
         continue-on-error: true
         run: |
-          # Derive Nix system string without relying on builtins.currentSystem
           uname_s=$(uname -s)
           uname_m=$(uname -m)
           case "${uname_s}-${uname_m}" in
             Linux-x86_64)   system="x86_64-linux" ;;
             Darwin-arm64)   system="aarch64-darwin" ;;
-            Darwin-x86_64)  system="x86_64-darwin" ;; # fallback if Intel mac runner
+            Darwin-x86_64)  system="x86_64-darwin" ;;
             *)              system="${uname_m}-unknown" ;;
           esac
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
@@ -146,22 +145,28 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
       - name: Aggregate failed packages (per system)
         id: aggregate
         run: |
           mkdir -p failed
           shopt -s nullglob
           for f in artifacts/**/build-*.log; do
-            base=$(basename "$f")
-            # build-<system>-<chunk>-<date>-<runid>.log
-            system=$(echo "$base" | cut -d- -f2- | cut -d- -f1) # first segment after 'build'
+            # Extract system from the log header (first SYSTEM line)
+            system=$(grep -m1 '^SYSTEM ' "$f" | awk '{print $2}')
+            if [ -z "$system" ]; then
+              echo "WARN: Could not determine system for $f, skipping"
+              continue
+            fi
             grep '^removing ' "$f" | sed 's/^removing //' >> "failed/${system}.txt" || true
           done
-          for sysfile in failed/*.txt; do
+          # Deduplicate
+          for sysfile in failed/*.txt 2>/dev/null; do
             sort -u "$sysfile" -o "$sysfile"
           done
-          echo "Failure files:"
+          echo "Failure files produced:"
           ls -1 failed || true
+
       - name: Prepare PR body
         id: pr_body
         run: |
@@ -188,8 +193,10 @@ jobs:
               echo "All packages built successfully on all platforms."
               echo
             else
+              # Known primary systems
               gen_section x86_64-linux
               gen_section aarch64-darwin
+              # Any additional (unexpected) systems
               for sfile in failed/*.txt; do
                 sys=$(basename "$sfile" .txt)
                 if [ "$sys" != "x86_64-linux" ] && [ "$sys" != "aarch64-darwin" ]; then
@@ -199,8 +206,11 @@ jobs:
             fi
             echo "</details>"
           } > pr_body.txt
+          echo "PR body preview:"
+          cat pr_body.txt
           body_json=$(jq -Rs . < pr_body.txt)
           echo "body=$body_json" >> $GITHUB_OUTPUT
+
       - name: Checkout target repo master
         uses: actions/checkout@v4
         with:
@@ -209,6 +219,7 @@ jobs:
           path: target-nixpkgs
           fetch-depth: 0
           token: ${{ secrets.MY_PAT }}
+
       - name: Import JSON files from dated branch
         working-directory: target-nixpkgs
         run: |
@@ -220,6 +231,7 @@ jobs:
                                        pkgs/development/r-modules/bioc-packages.json \
                                        pkgs/development/r-modules/cran-packages.json
           git diff --name-status pkgs/development/r-modules/*.json || true
+
       - name: Create PR with JSON updates
         uses: peter-evans/create-pull-request@v6
         with:

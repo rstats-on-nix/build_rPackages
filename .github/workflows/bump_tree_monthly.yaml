@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
   schedule:
-    - cron: '0 0 1 * *'   # Run monthly on the 1st at 00:00 UTC
+    - cron: '0 0 1 * *'   # Monthly on the 1st at 00:00 UTC
 
 jobs:
   setup-chunks:
@@ -92,7 +92,7 @@ jobs:
         run: |
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
           chunk_id="${{ steps.chunk_id.outputs.id }}"
-            logfile="logs/build-${{ matrix.os }}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
+          logfile="logs/build-${{ matrix.os }}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
           mkdir -p logs
           while read pkg; do
             echo "=== Building $pkg ===" | tee -a "$logfile"
@@ -113,7 +113,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+            path: artifacts
 
       - name: Aggregate failed packages
         id: aggregate
@@ -124,13 +124,8 @@ jobs:
             | sort -u > failed/failed.txt || true
           echo "Failed packages (if any):"
           cat failed/failed.txt || true
-          if [ -s failed/failed.txt ]; then
-            echo "has_failures=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_failures=false" >> $GITHUB_OUTPUT
-          fi
 
-      - name: Prepare PR body
+      - name: Prepare PR body (summary only; no result files committed)
         id: pr_body
         run: |
           echo "<details><summary>Failed packages</summary>" > pr_body.txt
@@ -146,35 +141,44 @@ jobs:
           body_json=$(jq -Rs . <<< "$body")
           echo "body=$body_json" >> $GITHUB_OUTPUT
 
-      # Checkout target repository so we can create a PR there
-      - name: Checkout target repo rstats-on-nix/nixpkgs
+      - name: Checkout target repo rstats-on-nix/nixpkgs (master)
         uses: actions/checkout@v4
         with:
           repository: rstats-on-nix/nixpkgs
           token: ${{ secrets.MY_PAT }}
           ref: master
+          path: target-nixpkgs
+          fetch-depth: 0
 
-      - name: Materialize results into target repo
+      - name: Import JSON files from dated branch (update only those files)
+        working-directory: target-nixpkgs
         run: |
-          date_dir="build-results/${{ needs.setup-chunks.outputs.branch_date }}"
-          mkdir -p "$date_dir"
-          if [ -s ../failed/failed.txt ]; then
-            cp ../failed/failed.txt "$date_dir/failed.txt"
+          date_branch="${{ needs.setup-chunks.outputs.branch_date }}"
+          echo "Importing JSON from branch: $date_branch"
+          if git ls-remote --exit-code origin "refs/heads/$date_branch" >/dev/null 2>&1; then
+            git fetch origin "$date_branch:$date_branch"
+            git checkout master
+            git checkout "$date_branch" -- pkgs/development/r-modules/bioc-annotation-packages.json \
+                                        pkgs/development/r-modules/bioc-experiment-packages.json \
+                                        pkgs/development/r-modules/bioc-packages.json \
+                                        pkgs/development/r-modules/cran-packages.json || true
+            echo "Imported JSON files."
           else
-            echo "All packages built successfully." > "$date_dir/AllSucceeded"
+            echo "No dated branch $date_branch found; skipping JSON import."
           fi
-          # Optional: keep the PR body snapshot
-          cp ../pr_body.txt "$date_dir/PR_BODY.md"
-          echo "Result files:"
-          find "$date_dir" -maxdepth 1 -type f -print
+          ls -lh pkgs/development/r-modules/*.json || true
 
-      - name: Create PR to rstats-on-nix/nixpkgs
+      - name: Create PR (only JSON file updates; build results remain as artifacts & PR body text)
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.MY_PAT }}
+          path: target-nixpkgs
           add-paths: |
-            build-results/${{ needs.setup-chunks.outputs.branch_date }}
+            pkgs/development/r-modules/bioc-annotation-packages.json
+            pkgs/development/r-modules/bioc-experiment-packages.json
+            pkgs/development/r-modules/bioc-packages.json
+            pkgs/development/r-modules/cran-packages.json
           base: master
-          branch: build-results-${{ needs.setup-chunks.outputs.branch_date }}
-          title: "Build results for ${{ needs.setup-chunks.outputs.branch_date }}"
+          branch: update-r-modules-${{ needs.setup-chunks.outputs.branch_date }}
+          title: "Update R module JSONs for ${{ needs.setup-chunks.outputs.branch_date }}"
           body: ${{ steps.pr_body.outputs.body }}

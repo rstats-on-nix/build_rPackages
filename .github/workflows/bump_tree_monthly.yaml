@@ -2,11 +2,16 @@ name: Build R Packages in Chunks
 
 on:
   workflow_dispatch:
+    inputs:
+      date:
+        description: "Override date (YYYY-MM-DD) to use that dated branch"
+        required: false
+        type: string
   push:
   schedule:
     - cron: '0 0 1 * *'   # Monthly on the 1st at 00:00 UTC
 
-# (PAT is used, so these permissions blocks are not strictly required, but harmless.)
+# Minimal permissions needed (PAT will be used for cross-repo work)
 permissions:
   contents: read
   pull-requests: read
@@ -21,8 +26,7 @@ jobs:
       - name: Verify PAT secret exists (early fail if missing)
         run: |
           if [ -z "${{ secrets.MY_PAT }}" ]; then
-            echo "ERROR: secrets.MY_PAT is not defined in this (source) repository."
-            echo "Define a PAT with 'repo' scope (classic) or fine-grained read/write contents access to rstats-on-nix/nixpkgs."
+            echo "ERROR: secrets.MY_PAT is not defined."
             exit 1
           fi
 
@@ -33,19 +37,24 @@ jobs:
         with:
           name: rstats-on-nix
 
-      - name: Set branch_date as today
+      - name: Determine branch_date
         id: set_date
         run: |
-          branch_date=$(date '+%Y-%m-%d')
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            branch_date="${{ github.event.inputs.date }}"
+          else
+            branch_date=$(date '+%Y-%m-%d')
+          fi
+          echo "Using branch_date=$branch_date"
           echo "branch_date=$branch_date" >> $GITHUB_OUTPUT
 
-      - name: Fetch rPackages attribute names without evaluating broken packages
+      - name: Fetch rPackages attribute names (avoid evaluating derivations)
         run: |
           nix eval --json \
             github:rstats-on-nix/nixpkgs/${{ steps.set_date.outputs.branch_date }}#rPackages \
             --apply builtins.attrNames > rpackages.json
           jq -r '.[]' rpackages.json > rpackages.csv
-          echo "Total packages:"
+          echo "Total package attrs:"
           wc -l rpackages.csv
 
       - name: Limit to first 10 packages (testing)
@@ -55,15 +64,15 @@ jobs:
           echo "Selected package count:"
           wc -l rpackages.csv
 
-      - name: Split packages into chunks of 2 (numeric suffix for chunk number)
+      - name: Split packages into chunks of 2
         id: split
         run: |
           mkdir chunks
           split -l 2 -d -a 3 rpackages.csv chunks/chunk_
           chunks_json=$(printf '%s\n' chunks/chunk_* | jq -R -s -c 'split("\n")[:-1]')
           echo "chunks=$chunks_json" >> $GITHUB_OUTPUT
-          echo "Chunk files:"
-          printf '%s\n' chunks/chunk_*
+          printf 'Created chunk files:\n'
+          ls -1 chunks
 
       - name: Upload chunk files
         uses: actions/upload-artifact@v4
@@ -93,14 +102,14 @@ jobs:
           name: package-chunks
           path: chunks
 
-      - name: Derive chunk ID (basename without path)
+      - name: Derive chunk ID
         id: chunk_id
         run: |
           fname=$(basename "${{ matrix.chunk_file }}")
           echo "id=$fname" >> $GITHUB_OUTPUT
-          echo "Using chunk id: $fname"
+          echo "Chunk ID: $fname (branch_date=${{ needs.setup-chunks.outputs.branch_date }})"
 
-      - name: Build packages (parallel via Nix internal parallelism)
+      - name: Build packages (Nix parallel)
         continue-on-error: true
         run: |
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
@@ -108,10 +117,11 @@ jobs:
           logfile="logs/build-${{ matrix.os }}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
           mkdir -p logs
           while read pkg; do
-            echo "=== Building $pkg ===" | tee -a "$logfile"
+            echo "=== Building $pkg (date $branch_date) ===" | tee -a "$logfile"
             nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" \
               >>"$logfile" 2>&1 || echo "removing $pkg" >>"$logfile"
           done < "${{ matrix.chunk_file }}"
+          echo "Finished chunk $chunk_id" | tee -a "$logfile"
 
       - name: Upload build log
         uses: actions/upload-artifact@v4
@@ -120,9 +130,15 @@ jobs:
           path: logs/
 
   collect-results:
-    needs: build-chunk
+    needs:
+      - setup-chunks
+      - build-chunk
     runs-on: ubuntu-latest
     steps:
+      - name: Confirm branch_date
+        run: |
+          echo "branch_date=${{ needs.setup-chunks.outputs.branch_date }}"
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -138,23 +154,24 @@ jobs:
           echo "Failed packages (if any):"
           cat failed/failed.txt || true
 
-      - name: Prepare PR body (summary only)
+      - name: Prepare PR body
         id: pr_body
         run: |
-          echo "<details><summary>Failed packages</summary>" > pr_body.txt
-          echo "" >> pr_body.txt
-          if [ -s failed/failed.txt ]; then
-            cat failed/failed.txt >> pr_body.txt
-          else
-            echo "All packages built successfully." >> pr_body.txt
-          fi
-          echo "" >> pr_body.txt
-          echo "</details>" >> pr_body.txt
-          body=$(cat pr_body.txt)
-          body_json=$(jq -Rs . <<< "$body")
+          {
+            echo "<details><summary>Failed packages</summary>"
+            echo
+            if [ -s failed/failed.txt ]; then
+              cat failed/failed.txt
+            else
+              echo "All packages built successfully."
+            fi
+            echo
+            echo "</details>"
+          } > pr_body.txt
+          body_json=$(jq -Rs . < pr_body.txt)
           echo "body=$body_json" >> $GITHUB_OUTPUT
 
-      - name: Checkout target repo (master) with PAT
+      - name: Checkout target repo master (cross-repo)
         uses: actions/checkout@v4
         with:
           repository: rstats-on-nix/nixpkgs
@@ -163,25 +180,23 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.MY_PAT }}
 
-      - name: Import JSON files from dated branch
+      - name: Import JSON files from dated branch (assumed to exist)
         working-directory: target-nixpkgs
         run: |
           date_branch="${{ needs.setup-chunks.outputs.branch_date }}"
-          echo "Importing JSON from branch: $date_branch"
-          if git ls-remote --exit-code origin "refs/heads/$date_branch" >/dev/null 2>&1; then
-            git fetch origin "$date_branch:$date_branch"
+          echo "Fetching dated branch: $date_branch"
+          git fetch origin "$date_branch:$date_branch" --depth=1
+          # Ensure we're on master working tree
             git checkout master
-            git checkout "$date_branch" -- pkgs/development/r-modules/bioc-annotation-packages.json \
-                                        pkgs/development/r-modules/bioc-experiment-packages.json \
-                                        pkgs/development/r-modules/bioc-packages.json \
-                                        pkgs/development/r-modules/cran-packages.json || true
-            echo "Imported JSON files from $date_branch."
-          else
-            echo "No dated branch $date_branch found; skipping JSON import."
-          fi
-          ls -lh pkgs/development/r-modules/*.json || true
+          # Overwrite the four JSON files from the dated branch
+          git checkout "$date_branch" -- pkgs/development/r-modules/bioc-annotation-packages.json \
+                                       pkgs/development/r-modules/bioc-experiment-packages.json \
+                                       pkgs/development/r-modules/bioc-packages.json \
+                                       pkgs/development/r-modules/cran-packages.json
+          echo "Files imported. Diff vs master HEAD (after overwrite):"
+          git diff --name-status pkgs/development/r-modules/*.json || true
 
-      - name: Create PR (JSON updates only)
+      - name: Create PR with JSON updates
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.MY_PAT }}

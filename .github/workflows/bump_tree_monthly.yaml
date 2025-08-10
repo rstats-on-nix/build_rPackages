@@ -167,11 +167,13 @@ jobs:
       - name: Prepare PR body
         id: pr_body
         run: |
+          shopt -s nullglob  # <--- ADD THIS LINE
           {
             echo "<details><summary>Failed packages</summary>"
             echo
             any=false
-            for f in failed/*.txt 2>/dev/null; do
+            # The loop now correctly handles the "no files" case thanks to nullglob
+            for f in failed/*.txt; do # <--- REMOVE 2>/dev/null
               [ -s "$f" ] && any=true
             done
             if ! $any; then

@@ -222,6 +222,6 @@ jobs:
             pkgs/development/r-modules/bioc-packages.json
             pkgs/development/r-modules/cran-packages.json
           base: master
-            branch: update-r-modules-${{ needs.setup-chunks.outputs.branch_date }}
+          branch: update-r-modules-${{ needs.setup-chunks.outputs.branch_date }}
           title: "Update R module JSONs for ${{ needs.setup-chunks.outputs.branch_date }}"
           body: ${{ steps.pr_body.outputs.body }}

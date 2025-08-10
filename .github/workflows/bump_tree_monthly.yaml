@@ -160,7 +160,8 @@ jobs:
           echo "Aggregated failure files:"
           ls -1 failed || true
           echo "-----"
-          for f in failed/*.txt 2>/dev/null; do
+          # This loop will now correctly handle the case where no .txt files exist
+          for f in failed/*.txt; do
             echo "== $f =="; cat "$f"; echo
           done
       - name: Prepare PR body

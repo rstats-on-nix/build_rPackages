@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
   schedule:
-    - cron: '0 0 15 * *'   # Run monthly on the 15th at 00:00 UTC
+    - cron: '0 0 1 * *'   # Run monthly on the 1st at 00:00 UTC
 
 jobs:
   setup-chunks:
@@ -46,9 +46,7 @@ jobs:
         id: split
         run: |
           mkdir chunks
-          # -d numeric suffixes, -a 3 = zero-padded width 3 (chunk_000, chunk_001, ...)
           split -l 2 -d -a 3 rpackages.csv chunks/chunk_
-          # JSON array of chunk file names for matrix
           chunks_json=$(printf '%s\n' chunks/chunk_* | jq -R -s -c 'split("\n")[:-1]')
           echo "chunks=$chunks_json" >> $GITHUB_OUTPUT
           echo "Chunk files:"
@@ -85,16 +83,16 @@ jobs:
       - name: Derive chunk ID (basename without path)
         id: chunk_id
         run: |
-            fname=$(basename "${{ matrix.chunk_file }}")
-            echo "id=$fname" >> $GITHUB_OUTPUT
-            echo "Using chunk id: $fname"
+          fname=$(basename "${{ matrix.chunk_file }}")
+          echo "id=$fname" >> $GITHUB_OUTPUT
+          echo "Using chunk id: $fname"
 
       - name: Build packages (parallel via Nix internal parallelism)
         continue-on-error: true
         run: |
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
           chunk_id="${{ steps.chunk_id.outputs.id }}"
-          logfile="logs/build-${{ matrix.os }}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
+            logfile="logs/build-${{ matrix.os }}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
           mkdir -p logs
           while read pkg; do
             echo "=== Building $pkg ===" | tee -a "$logfile"
@@ -105,7 +103,6 @@ jobs:
       - name: Upload build log
         uses: actions/upload-artifact@v4
         with:
-          # Use the sanitized numeric chunk id (no slashes) to avoid invalid artifact names
           name: logs-${{ matrix.os }}-${{ steps.chunk_id.outputs.id }}
           path: logs/
 
@@ -113,18 +110,25 @@ jobs:
     needs: build-chunk
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 
       - name: Aggregate failed packages
+        id: aggregate
         run: |
           mkdir -p failed
           find artifacts -type f -name "*.log" -exec grep -E 'removing .*' {} \; \
             | sed -E 's/^removing //' \
-            | sort -u > failed/failed.txt
-          echo "Failed packages:"
-            cat failed/failed.txt || true
+            | sort -u > failed/failed.txt || true
+          echo "Failed packages (if any):"
+          cat failed/failed.txt || true
+          if [ -s failed/failed.txt ]; then
+            echo "has_failures=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_failures=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Prepare PR body
         id: pr_body
@@ -142,11 +146,34 @@ jobs:
           body_json=$(jq -Rs . <<< "$body")
           echo "body=$body_json" >> $GITHUB_OUTPUT
 
+      # Checkout target repository so we can create a PR there
+      - name: Checkout target repo rstats-on-nix/nixpkgs
+        uses: actions/checkout@v4
+        with:
+          repository: rstats-on-nix/nixpkgs
+          token: ${{ secrets.MY_PAT }}
+          ref: master
+
+      - name: Materialize results into target repo
+        run: |
+          date_dir="build-results/${{ needs.setup-chunks.outputs.branch_date }}"
+          mkdir -p "$date_dir"
+          if [ -s ../failed/failed.txt ]; then
+            cp ../failed/failed.txt "$date_dir/failed.txt"
+          else
+            echo "All packages built successfully." > "$date_dir/AllSucceeded"
+          fi
+          # Optional: keep the PR body snapshot
+          cp ../pr_body.txt "$date_dir/PR_BODY.md"
+          echo "Result files:"
+          find "$date_dir" -maxdepth 1 -type f -print
+
       - name: Create PR to rstats-on-nix/nixpkgs
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.MY_PAT }}
-          repository: rstats-on-nix/nixpkgs
+          add-paths: |
+            build-results/${{ needs.setup-chunks.outputs.branch_date }}
           base: master
           branch: build-results-${{ needs.setup-chunks.outputs.branch_date }}
           title: "Build results for ${{ needs.setup-chunks.outputs.branch_date }}"

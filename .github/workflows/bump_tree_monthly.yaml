@@ -26,10 +26,15 @@ jobs:
           branch_date=$(date '+%Y-%m-%d')
             echo "branch_date=$branch_date" >> $GITHUB_OUTPUT
 
-      - name: Fetch rPackages list from dated branch
+      - name: Fetch rPackages attribute names without evaluating broken packages
         run: |
-          nix eval --json github:rstats-on-nix/nixpkgs/${{ steps.set_date.outputs.branch_date }}#rPackages \
-            | jq -r 'keys[]' > rpackages.csv
+          # Use builtins.attrNames to avoid forcing each derivation (which would assert on broken ones)
+          nix eval --json \
+            github:rstats-on-nix/nixpkgs/${{ steps.set_date.outputs.branch_date }}#rPackages \
+            --apply builtins.attrNames > rpackages.json
+          jq -r '.[]' rpackages.json > rpackages.csv
+          echo "Total packages (all names, includes ones that may be broken):"
+          wc -l rpackages.csv
 
       - name: Limit to first 10 packages (testing)
         run: |

@@ -76,7 +76,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         chunk_file: ${{ fromJson(needs.setup-chunks.outputs.chunks) }}
-    # MODIFICATION: Added outputs to pass failure data directly to the collect job
     outputs:
       system: ${{ steps.set_outputs.outputs.system }}
       failed_packages: ${{ steps.set_outputs.outputs.failed_packages }}
@@ -97,7 +96,7 @@ jobs:
           fname=$(basename "${{ matrix.chunk_file }}")
           echo "id=$fname" >> $GITHUB_OUTPUT
       - name: Build packages
-        id: build # Added an ID to reference this step's output
+        id: build
         continue-on-error: true
         run: |
           uname_s=$(uname -s)
@@ -108,7 +107,7 @@ jobs:
             Darwin-x86_64)  system="x86_64-darwin" ;;
             *)              system="${uname_m}-unknown" ;;
           esac
-          echo "system=$system" >> $GITHUB_OUTPUT # Set system name for later steps
+          echo "system=$system" >> $GITHUB_OUTPUT
 
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
           chunk_id="${{ steps.chunk_id.outputs.id }}"
@@ -131,7 +130,6 @@ jobs:
             sort -u "$failfile" > "fail_out/${system}.txt"
           fi
       
-      # MODIFICATION: New step to capture failures as a job output instead of uploading artifacts.
       - name: Set failure outputs
         id: set_outputs
         run: |
@@ -141,7 +139,6 @@ jobs:
           echo "system=${system}" >> $GITHUB_OUTPUT
 
           if [ -f "$fail_file" ]; then
-            # Using a heredoc to safely handle multi-line file content
             {
               echo 'failed_packages<<EOF'
               cat "$fail_file"
@@ -150,9 +147,6 @@ jobs:
           else
             echo "failed_packages=" >> $GITHUB_OUTPUT
           fi
-      # MODIFICATION: Artifact uploads for logs/fails are no longer needed for the workflow logic, but can be kept for debugging.
-      # - name: Upload logs...
-      # - name: Upload fail list...
 
   collect-results:
     needs:
@@ -160,18 +154,20 @@ jobs:
       - build-chunk
     runs-on: ubuntu-latest
     steps:
-      # MODIFICATION: The artifact download step is no longer needed.
-      # - name: Download all artifacts...
-
-      # MODIFICATION: Rewritten to use job outputs instead of artifacts.
       - name: Aggregate failures from job outputs
         id: aggregate
         run: |
           mkdir -p failed
           
-          # This toJSON function safely converts the matrix outputs into a JSON string
-          # We then use jq to parse this and recreate the failure files locally
-          echo '${{ toJSON(needs.build-chunk.outputs) }}' | jq -c 'to_entries[] | .value' | \
+          RAW_JSON='${{ toJSON(needs.build-chunk.outputs) }}'
+
+          # This logic handles both multi-job and single-job outputs from the matrix.
+          # It checks if the JSON is a single flat object (the edge case) and wraps it
+          # to look like a normal multi-job output.
+          NORMALIZED_JSON=$(echo "$RAW_JSON" | jq 'if ((type == "object") and (.system | type == "string")) then { "single_job": . } else . end')
+
+          # The rest of the script now receives a consistent structure.
+          echo "$NORMALIZED_JSON" | jq -c '.[]' | \
           while read -r line; do
             system=$(echo "$line" | jq -r .system)
             packages=$(echo "$line" | jq -r .failed_packages)
@@ -194,16 +190,14 @@ jobs:
             echo "== $f =="; cat "$f"; echo
           done
 
-      # MODIFICATION: Corrected shell syntax error.
       - name: Prepare PR body
         id: pr_body
         run: |
-          shopt -s nullglob # FIX: Ensures the for loop doesn't run if no .txt files exist.
+          shopt -s nullglob
           {
             echo "<details><summary>Failed packages</summary>"
             echo
             any=false
-            # FIX: Removed `2>/dev/null` which caused a syntax error.
             for f in failed/*.txt; do
               [ -s "$f" ] && any=true
             done
@@ -211,7 +205,6 @@ jobs:
               echo "All packages built successfully on all platforms."
               echo
             else
-              # Ordered output
               for sys in x86_64-linux aarch64-darwin x86_64-darwin unknown; do
                 file="failed/${sys}.txt"
                 if [ -s "$file" ]; then

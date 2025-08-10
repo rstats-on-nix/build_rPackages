@@ -1,0 +1,138 @@
+name: Build R Packages in Chunks
+
+on:
+  workflow_dispatch:
+  push:
+  schedule:
+    - cron: '0 0 15 * *'   # Run monthly on the 15th at 00:00 UTC
+
+jobs:
+  setup-chunks:
+    runs-on: ubuntu-latest
+    outputs:
+      branch_date: ${{ steps.set_date.outputs.branch_date }}
+      chunks: ${{ steps.split.outputs.chunks }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/cachix-action@v15
+        with:
+          name: rstats-on-nix
+
+      - name: Set branch_date as today
+        id: set_date
+        run: |
+          branch_date=$(date '+%Y-%m-%d')
+            echo "branch_date=$branch_date" >> $GITHUB_OUTPUT
+
+      - name: Fetch rPackages list from dated branch
+        run: |
+          nix eval --json github:rstats-on-nix/nixpkgs/${{ steps.set_date.outputs.branch_date }}#rPackages \
+            | jq -r 'keys[]' > rpackages.csv
+
+      - name: Limit to first 10 packages (testing)
+        run: |
+          head -n 10 rpackages.csv > rpackages.first10
+          mv rpackages.first10 rpackages.csv
+          echo "Selected package count:"
+          wc -l rpackages.csv
+
+      - name: Split packages into chunks of 2 (5 chunks total for 10 packages)
+        id: split
+        run: |
+          mkdir chunks
+          split -l 2 rpackages.csv chunks/chunk_
+          # JSON array of chunk file names for matrix
+          chunks_json=$(printf '%s\n' chunks/chunk_* | jq -R -s -c 'split("\n")[:-1]')
+          echo "chunks=$chunks_json" >> $GITHUB_OUTPUT
+
+      - name: Upload chunk files
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-chunks
+          path: chunks/
+
+  build-chunk:
+    needs: setup-chunks
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        chunk_file: ${{ fromJson(needs.setup-chunks.outputs.chunks) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/cachix-action@v15
+        with:
+          name: rstats-on-nix
+
+      - name: Download chunk file
+        uses: actions/download-artifact@v4
+        with:
+          name: package-chunks
+          path: chunks
+
+      - name: Build packages (parallel via Nix internal parallelism)
+        continue-on-error: true
+        run: |
+          branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
+          logfile="logs/build-${{ matrix.os }}-${branch_date}-${{ github.run_id }}.log"
+          mkdir -p logs
+          # Use Nix parallelism (auto uses all available cores)
+          while read pkg; do
+            echo "=== Building $pkg ===" | tee -a "$logfile"
+            nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" \
+              >>"$logfile" 2>&1 || echo "removing $pkg" >>"$logfile"
+          done < "${{ matrix.chunk_file }}"
+
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        with:
+            name: logs-${{ matrix.os }}-${{ matrix.chunk_file }}
+            path: logs/
+
+  collect-results:
+    needs: build-chunk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Aggregate failed packages
+        run: |
+          mkdir -p failed
+          find artifacts -type f -name "*.log" -exec grep -E 'removing .*' {} \; \
+            | sed -E 's/^removing //' \
+            | sort -u > failed/failed.txt
+          echo "Failed packages:"
+          cat failed/failed.txt || true
+
+      - name: Prepare PR body
+        id: pr_body
+        run: |
+          echo "<details><summary>Failed packages</summary>" > pr_body.txt
+          echo "" >> pr_body.txt
+          if [ -s failed/failed.txt ]; then
+            cat failed/failed.txt >> pr_body.txt
+          else
+            echo "All packages built successfully." >> pr_body.txt
+          fi
+          echo "" >> pr_body.txt
+          echo "</details>" >> pr_body.txt
+          body=$(cat pr_body.txt)
+          body_json=$(jq -Rs . <<< "$body")
+          echo "body=$body_json" >> $GITHUB_OUTPUT
+
+      - name: Create PR to rstats-on-nix/nixpkgs
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.MY_PAT }}
+          repository: rstats-on-nix/nixpkgs
+          base: master
+          branch: build-results-${{ needs.setup-chunks.outputs.branch_date }}
+          title: "Build results for ${{ needs.setup-chunks.outputs.branch_date }}"
+          body: ${{ steps.pr_body.outputs.body }}

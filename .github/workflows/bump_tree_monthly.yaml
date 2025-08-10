@@ -24,16 +24,15 @@ jobs:
         id: set_date
         run: |
           branch_date=$(date '+%Y-%m-%d')
-            echo "branch_date=$branch_date" >> $GITHUB_OUTPUT
+          echo "branch_date=$branch_date" >> $GITHUB_OUTPUT
 
       - name: Fetch rPackages attribute names without evaluating broken packages
         run: |
-          # Use builtins.attrNames to avoid forcing each derivation (which would assert on broken ones)
           nix eval --json \
             github:rstats-on-nix/nixpkgs/${{ steps.set_date.outputs.branch_date }}#rPackages \
             --apply builtins.attrNames > rpackages.json
           jq -r '.[]' rpackages.json > rpackages.csv
-          echo "Total packages (all names, includes ones that may be broken):"
+          echo "Total packages:"
           wc -l rpackages.csv
 
       - name: Limit to first 10 packages (testing)
@@ -43,14 +42,17 @@ jobs:
           echo "Selected package count:"
           wc -l rpackages.csv
 
-      - name: Split packages into chunks of 2 (5 chunks total for 10 packages)
+      - name: Split packages into chunks of 2 (numeric suffix for chunk number)
         id: split
         run: |
           mkdir chunks
-          split -l 2 rpackages.csv chunks/chunk_
+          # -d numeric suffixes, -a 3 = zero-padded width 3 (chunk_000, chunk_001, ...)
+          split -l 2 -d -a 3 rpackages.csv chunks/chunk_
           # JSON array of chunk file names for matrix
           chunks_json=$(printf '%s\n' chunks/chunk_* | jq -R -s -c 'split("\n")[:-1]')
           echo "chunks=$chunks_json" >> $GITHUB_OUTPUT
+          echo "Chunk files:"
+          printf '%s\n' chunks/chunk_*
 
       - name: Upload chunk files
         uses: actions/upload-artifact@v4
@@ -80,13 +82,20 @@ jobs:
           name: package-chunks
           path: chunks
 
+      - name: Derive chunk ID (basename without path)
+        id: chunk_id
+        run: |
+            fname=$(basename "${{ matrix.chunk_file }}")
+            echo "id=$fname" >> $GITHUB_OUTPUT
+            echo "Using chunk id: $fname"
+
       - name: Build packages (parallel via Nix internal parallelism)
         continue-on-error: true
         run: |
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
-          logfile="logs/build-${{ matrix.os }}-${branch_date}-${{ github.run_id }}.log"
+          chunk_id="${{ steps.chunk_id.outputs.id }}"
+          logfile="logs/build-${{ matrix.os }}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
           mkdir -p logs
-          # Use Nix parallelism (auto uses all available cores)
           while read pkg; do
             echo "=== Building $pkg ===" | tee -a "$logfile"
             nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" \
@@ -96,8 +105,9 @@ jobs:
       - name: Upload build log
         uses: actions/upload-artifact@v4
         with:
-            name: logs-${{ matrix.os }}-${{ matrix.chunk_file }}
-            path: logs/
+          # Use the sanitized numeric chunk id (no slashes) to avoid invalid artifact names
+          name: logs-${{ matrix.os }}-${{ steps.chunk_id.outputs.id }}
+          path: logs/
 
   collect-results:
     needs: build-chunk
@@ -114,7 +124,7 @@ jobs:
             | sed -E 's/^removing //' \
             | sort -u > failed/failed.txt
           echo "Failed packages:"
-          cat failed/failed.txt || true
+            cat failed/failed.txt || true
 
       - name: Prepare PR body
         id: pr_body

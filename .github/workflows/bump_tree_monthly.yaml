@@ -95,7 +95,7 @@ jobs:
         id: chunk_id
         run: |
           fname=$(basename "${{ matrix.chunk_file }}")
-          echo "id=$fname" >> $GITHUB_OUTPUT
+            echo "id=$fname" >> $GITHUB_OUTPUT
           echo "Chunk ID: $fname (branch_date=${{ needs.setup-chunks.outputs.branch_date }})"
       - name: Build packages
         continue-on-error: true
@@ -108,6 +108,7 @@ jobs:
             Darwin-x86_64)  system="x86_64-darwin" ;;
             *)              system="${uname_m}-unknown" ;;
           esac
+          # Normalize Intel mac to x86_64-darwin; we won't aggregate it separately but we keep name distinct.
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
           chunk_id="${{ steps.chunk_id.outputs.id }}"
           logfile="logs/build-${system}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
@@ -121,9 +122,10 @@ jobs:
           while read pkg; do
             echo "=== Building $pkg (date $branch_date system $system) ===" | tee -a "$logfile"
             if nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" >>"$logfile" 2>&1; then
-              echo "success $pkg" >>"$logfile"
+              echo "SUCCESS_PKG $pkg" >>"$logfile"
             else
-              echo "removing $pkg" >>"$logfile"
+              # New unambiguous failure marker:
+              echo "FAIL_PKG $pkg" >>"$logfile"
             fi
           done < "${{ matrix.chunk_file }}"
           echo "FINISH $(date -u +%FT%TZ)" >>"$logfile"
@@ -141,6 +143,7 @@ jobs:
     steps:
       - name: Confirm branch_date
         run: echo "branch_date=${{ needs.setup-chunks.outputs.branch_date }}"
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -152,30 +155,43 @@ jobs:
           mkdir -p failed
           shopt -s nullglob
           for f in artifacts/**/build-*.log; do
-            # Extract system from the log header (first SYSTEM line)
+            # Primary attempt: read the SYSTEM header
             system=$(grep -m1 '^SYSTEM ' "$f" | awk '{print $2}')
             if [ -z "$system" ]; then
-              echo "WARN: Could not determine system for $f, skipping"
-              continue
+              # Fallback to path heuristics
+              case "$f" in
+                *logs-ubuntu-latest-*) system="x86_64-linux" ;;
+                *logs-macos-latest-*)  system="aarch64-darwin" ;;
+                *build-linux-*)        system="x86_64-linux" ;;
+                *build-darwin-*)       system="aarch64-darwin" ;;
+                *)                     system="unknown" ;;
+              esac
             fi
-            grep '^removing ' "$f" | sed 's/^removing //' >> "failed/${system}.txt" || true
+            # Normalize possible x86_64-darwin to x86_64-darwin (leave as-is) – only aggregate canonical ones + unknown
+            grep '^FAIL_PKG ' "$f" | cut -d' ' -f2 >> "failed/${system}.txt" || true
           done
-          # Deduplicate
+          # Deduplicate lines
           for sysfile in failed/*.txt 2>/dev/null; do
             sort -u "$sysfile" -o "$sysfile"
           done
           echo "Failure files produced:"
           ls -1 failed || true
+          echo "Preview contents:"
+          for sysfile in failed/*.txt 2>/dev/null; do
+            echo "== $(basename "$sysfile") =="
+            cat "$sysfile"
+          done
 
       - name: Prepare PR body
         id: pr_body
         run: |
-          gen_section () {
-            sys="$1"
+          section () {
+            sys="$1"; pretty="$2"
             file="failed/${sys}.txt"
             if [ -s "$file" ]; then
               count=$(wc -l < "$file")
-              echo "### ${sys} (${count})"
+              echo "### ${pretty} (${count})"
+              # Bullet list
               sed 's/^/* /' "$file"
               echo
             fi
@@ -183,24 +199,22 @@ jobs:
           {
             echo "<details><summary>Failed packages</summary>"
             echo
-            any=false
-            if ls failed/*.txt >/dev/null 2>&1; then
-              for sfile in failed/*.txt; do
-                [ -s "$sfile" ] && any=true
-              done
-            fi
-            if [ "$any" = false ]; then
+            have_fail=false
+            for f in failed/*.txt 2>/dev/null; do
+              [ -s "$f" ] && have_fail=true
+            done
+            if [ "$have_fail" = false ]; then
               echo "All packages built successfully on all platforms."
               echo
             else
-              # Known primary systems
-              gen_section x86_64-linux
-              gen_section aarch64-darwin
-              # Any additional (unexpected) systems
-              for sfile in failed/*.txt; do
-                sys=$(basename "$sfile" .txt)
+              # Canonical sections
+              section x86_64-linux "x86_64-linux"
+              section aarch64-darwin "aarch64-darwin"
+              # Anything unexpected
+              for f in failed/*.txt 2>/dev/null; do
+                sys=$(basename "$f" .txt)
                 if [ "$sys" != "x86_64-linux" ] && [ "$sys" != "aarch64-darwin" ]; then
-                  gen_section "$sys"
+                  section "$sys" "$sys"
                 fi
               done
             fi

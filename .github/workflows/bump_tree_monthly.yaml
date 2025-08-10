@@ -41,7 +41,7 @@ jobs:
           else
             branch_date=$(date '+%Y-%m-%d')
           fi
-          echo "Using branch_date=$branch_date"
+            echo "Using branch_date=$branch_date"
           echo "branch_date=$branch_date" >> $GITHUB_OUTPUT
       - name: Fetch rPackages attribute names
         run: |
@@ -153,75 +153,71 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
           mkdir -p failed
-          # Iterate over all build logs
           for f in artifacts/**/build-*.log; do
-            # Try SYSTEM header
-            system=$(grep -m1 '^SYSTEM ' "$f" | awk '{print $2}' || true)
-            if [ -z "${system}" ]; then
-              # Derive from filename: build-<rawsys>-...
-              fname=$(basename "$f")
-              rawsys=${fname#build-}
-              rawsys=${rawsys%%-*}
-              system="$rawsys"
-            fi
-            # Normalize
-            case "$system" in
+            fname=$(basename "$f")
+            rest=${fname#build-}
+            rawsys=${rest%%-*}
+            case "$rawsys" in
+              linux)          system="x86_64-linux" ;;
+              darwin)         system="aarch64-darwin" ;;  # assuming arm runners
               x86_64-linux)   system="x86_64-linux" ;;
               aarch64-darwin) system="aarch64-darwin" ;;
-              x86_64-darwin)  system="x86_64-darwin" ;; # keep separate if it ever appears
-              linux)          system="x86_64-linux" ;;
-              darwin)         system="aarch64-darwin" ;; # assume arm mac runner
+              x86_64-darwin)  system="x86_64-darwin" ;;
               *)              system="unknown" ;;
             esac
-            # Append failures
             if grep -q '^FAIL_PKG ' "$f"; then
               grep '^FAIL_PKG ' "$f" | awk '{print $2}' >> "failed/${system}.txt"
             fi
           done
-
-          # Deduplicate (only if files exist)
-          for sysfile in failed/*.txt; do
-            [ -s "$sysfile" ] || continue
-            sort -u "$sysfile" -o "$sysfile"
+          for sysfile in failed/*.txt 2>/dev/null; do
+            [ -s "$sysfile" ] && sort -u "$sysfile" -o "$sysfile"
           done
-
-          echo "Failure files produced:"
-            ls -1 failed || true
-          echo "Preview contents:"
-          for sysfile in failed/*.txt; do
-            echo "== $(basename "$sysfile") =="
-            cat "$sysfile"
-            echo
-          done || true
+          echo "Failure files:"
+          ls -1 failed || true
+          echo "Contents:"
+          for sysfile in failed/*.txt 2>/dev/null; do
+            echo "== $(basename "$sysfile") =="; cat "$sysfile"; echo
+          done
 
       - name: Prepare PR body
         id: pr_body
         run: |
-          section () {
-            sys="$1"; pretty="$2"
-            file="failed/${sys}.txt"
-            if [ -s "$file" ]; then
-              count=$(wc -l < "$file")
-              echo "### ${pretty} (${count})"
-              sed 's/^/* /' "$file"
-              echo
-            fi
-          }
           {
             echo "<details><summary>Failed packages</summary>"
             echo
-            have_fail=false
+            any=false
             for f in failed/*.txt 2>/dev/null; do
-              [ -s "$f" ] && have_fail=true
+              [ -s "$f" ] && any=true
             done
-            if [ "$have_fail" = false ]; then
+            if [ "$any" = false ]; then
               echo "All packages built successfully on all platforms."
               echo
             else
-              section x86_64-linux "x86_64-linux"
-              section aarch64-darwin "aarch64-darwin"
-              section x86_64-darwin "x86_64-darwin"
-              section unknown "unknown"
+              # Order: linux, darwin, then others if present
+              if [ -s failed/x86_64-linux.txt ]; then
+                count=$(wc -l < failed/x86_64-linux.txt)
+                echo "x86_64-linux (${count}):"
+                cat failed/x86_64-linux.txt
+                echo
+              fi
+              if [ -s failed/aarch64-darwin.txt ]; then
+                count=$(wc -l < failed/aarch64-darwin.txt)
+                echo "aarch64-darwin (${count}):"
+                cat failed/aarch64-darwin.txt
+                echo
+              fi
+              if [ -s failed/x86_64-darwin.txt ]; then
+                count=$(wc -l < failed/x86_64-darwin.txt)
+                echo "x86_64-darwin (${count}):"
+                cat failed/x86_64-darwin.txt
+                echo
+              fi
+              if [ -s failed/unknown.txt ]; then
+                count=$(wc -l < failed/unknown.txt)
+                echo "unknown (${count}):"
+                cat failed/unknown.txt
+                echo
+              fi
             fi
             echo "</details>"
           } > pr_body.txt
@@ -265,4 +261,3 @@ jobs:
           branch: update-r-modules-${{ needs.setup-chunks.outputs.branch_date }}
           title: "Update R module JSONs for ${{ needs.setup-chunks.outputs.branch_date }}"
           body: ${{ steps.pr_body.outputs.body }}
-          

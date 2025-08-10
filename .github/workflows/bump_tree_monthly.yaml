@@ -76,6 +76,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         chunk_file: ${{ fromJson(needs.setup-chunks.outputs.chunks) }}
+    # MODIFICATION: Added outputs to pass failure data directly to the collect job
+    outputs:
+      system: ${{ steps.set_outputs.outputs.system }}
+      failed_packages: ${{ steps.set_outputs.outputs.failed_packages }}
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
@@ -93,6 +97,7 @@ jobs:
           fname=$(basename "${{ matrix.chunk_file }}")
           echo "id=$fname" >> $GITHUB_OUTPUT
       - name: Build packages
+        id: build # Added an ID to reference this step's output
         continue-on-error: true
         run: |
           uname_s=$(uname -s)
@@ -103,11 +108,14 @@ jobs:
             Darwin-x86_64)  system="x86_64-darwin" ;;
             *)              system="${uname_m}-unknown" ;;
           esac
+          echo "system=$system" >> $GITHUB_OUTPUT # Set system name for later steps
+
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
           chunk_id="${{ steps.chunk_id.outputs.id }}"
           logfile="logs/build-${system}-${chunk_id}-${branch_date}.log"
-          mkdir -p logs
           failfile="fail-${system}.txt"
+          mkdir -p logs
+          
           while read pkg; do
             echo "=== Building $pkg ($system $branch_date) ===" | tee -a "$logfile"
             if nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" >>"$logfile" 2>&1; then
@@ -117,21 +125,34 @@ jobs:
               echo "$pkg" >> "$failfile"
             fi
           done < "${{ matrix.chunk_file }}"
+
           mkdir -p fail_out
           if [ -f "$failfile" ]; then
             sort -u "$failfile" > "fail_out/${system}.txt"
           fi
-      - name: Upload logs
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-${{ matrix.os }}-${{ steps.chunk_id.outputs.id }}
-          path: logs/
-      - name: Upload fail list
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fails-${{ matrix.os }}-${{ steps.chunk_id.outputs.id }}
-          path: fail_out/
+      
+      # MODIFICATION: New step to capture failures as a job output instead of uploading artifacts.
+      - name: Set failure outputs
+        id: set_outputs
+        run: |
+          system="${{ steps.build.outputs.system }}"
+          fail_file="fail_out/${system}.txt"
+          
+          echo "system=${system}" >> $GITHUB_OUTPUT
+
+          if [ -f "$fail_file" ]; then
+            # Using a heredoc to safely handle multi-line file content
+            {
+              echo 'failed_packages<<EOF'
+              cat "$fail_file"
+              echo EOF
+            } >> $GITHUB_OUTPUT
+          else
+            echo "failed_packages=" >> $GITHUB_OUTPUT
+          fi
+      # MODIFICATION: Artifact uploads for logs/fails are no longer needed for the workflow logic, but can be kept for debugging.
+      # - name: Upload logs...
+      # - name: Upload fail list...
 
   collect-results:
     needs:
@@ -139,41 +160,51 @@ jobs:
       - build-chunk
     runs-on: ubuntu-latest
     steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-      - name: Aggregate failures
+      # MODIFICATION: The artifact download step is no longer needed.
+      # - name: Download all artifacts...
+
+      # MODIFICATION: Rewritten to use job outputs instead of artifacts.
+      - name: Aggregate failures from job outputs
         id: aggregate
         run: |
           mkdir -p failed
-          shopt -s nullglob
-          # Copy all per-system fail files from any artifact
-          for f in artifacts/**/fail_out/*.txt; do
-            sys=$(basename "$f")
-            cat "$f" >> "failed/$sys"
+          
+          # This toJSON function safely converts the matrix outputs into a JSON string
+          # We then use jq to parse this and recreate the failure files locally
+          echo '${{ toJSON(needs.build-chunk.outputs) }}' | jq -c 'to_entries[] | .value' | \
+          while read -r line; do
+            system=$(echo "$line" | jq -r .system)
+            packages=$(echo "$line" | jq -r .failed_packages)
+
+            if [ -n "$packages" ]; then
+              echo "Failures reported for system: $system"
+              echo "$packages" >> "failed/${system}.txt"
+            fi
           done
-          # Deduplicate each system file
+
+          shopt -s nullglob
           for f in failed/*.txt; do
             sort -u "$f" -o "$f"
           done
+          
           echo "Aggregated failure files:"
           ls -1 failed || true
           echo "-----"
-          # This loop will now correctly handle the case where no .txt files exist
           for f in failed/*.txt; do
             echo "== $f =="; cat "$f"; echo
           done
+
+      # MODIFICATION: Corrected shell syntax error.
       - name: Prepare PR body
         id: pr_body
         run: |
-          shopt -s nullglob  # <--- ADD THIS LINE
+          shopt -s nullglob # FIX: Ensures the for loop doesn't run if no .txt files exist.
           {
             echo "<details><summary>Failed packages</summary>"
             echo
             any=false
-            # The loop now correctly handles the "no files" case thanks to nullglob
-            for f in failed/*.txt; do # <--- REMOVE 2>/dev/null
+            # FIX: Removed `2>/dev/null` which caused a syntax error.
+            for f in failed/*.txt; do
               [ -s "$f" ] && any=true
             done
             if ! $any; then
@@ -184,8 +215,10 @@ jobs:
               for sys in x86_64-linux aarch64-darwin x86_64-darwin unknown; do
                 file="failed/${sys}.txt"
                 if [ -s "$file" ]; then
-                  echo "${sys}:"
+                  echo "### \`${sys}\`"
+                  echo '```'
                   cat "$file"
+                  echo '```'
                   echo
                 fi
               done
@@ -195,6 +228,7 @@ jobs:
           cat pr_body.txt
           body_json=$(jq -Rs . < pr_body.txt)
           echo "body=$body_json" >> $GITHUB_OUTPUT
+
       - name: Checkout target repo master
         uses: actions/checkout@v4
         with:

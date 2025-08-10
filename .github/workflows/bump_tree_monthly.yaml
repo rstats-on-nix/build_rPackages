@@ -95,7 +95,7 @@ jobs:
         id: chunk_id
         run: |
           fname=$(basename "${{ matrix.chunk_file }}")
-            echo "id=$fname" >> $GITHUB_OUTPUT
+          echo "id=$fname" >> $GITHUB_OUTPUT
           echo "Chunk ID: $fname (branch_date=${{ needs.setup-chunks.outputs.branch_date }})"
       - name: Build packages
         continue-on-error: true
@@ -108,7 +108,6 @@ jobs:
             Darwin-x86_64)  system="x86_64-darwin" ;;
             *)              system="${uname_m}-unknown" ;;
           esac
-          # Normalize Intel mac to x86_64-darwin; we won't aggregate it separately but we keep name distinct.
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
           chunk_id="${{ steps.chunk_id.outputs.id }}"
           logfile="logs/build-${system}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
@@ -124,7 +123,6 @@ jobs:
             if nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" >>"$logfile" 2>&1; then
               echo "SUCCESS_PKG $pkg" >>"$logfile"
             else
-              # New unambiguous failure marker:
               echo "FAIL_PKG $pkg" >>"$logfile"
             fi
           done < "${{ matrix.chunk_file }}"
@@ -152,35 +150,49 @@ jobs:
       - name: Aggregate failed packages (per system)
         id: aggregate
         run: |
-          mkdir -p failed
+          set -euo pipefail
           shopt -s nullglob
+          mkdir -p failed
+          # Iterate over all build logs
           for f in artifacts/**/build-*.log; do
-            # Primary attempt: read the SYSTEM header
-            system=$(grep -m1 '^SYSTEM ' "$f" | awk '{print $2}')
-            if [ -z "$system" ]; then
-              # Fallback to path heuristics
-              case "$f" in
-                *logs-ubuntu-latest-*) system="x86_64-linux" ;;
-                *logs-macos-latest-*)  system="aarch64-darwin" ;;
-                *build-linux-*)        system="x86_64-linux" ;;
-                *build-darwin-*)       system="aarch64-darwin" ;;
-                *)                     system="unknown" ;;
-              esac
+            # Try SYSTEM header
+            system=$(grep -m1 '^SYSTEM ' "$f" | awk '{print $2}' || true)
+            if [ -z "${system}" ]; then
+              # Derive from filename: build-<rawsys>-...
+              fname=$(basename "$f")
+              rawsys=${fname#build-}
+              rawsys=${rawsys%%-*}
+              system="$rawsys"
             fi
-            # Normalize possible x86_64-darwin to x86_64-darwin (leave as-is) – only aggregate canonical ones + unknown
-            grep '^FAIL_PKG ' "$f" | cut -d' ' -f2 >> "failed/${system}.txt" || true
+            # Normalize
+            case "$system" in
+              x86_64-linux)   system="x86_64-linux" ;;
+              aarch64-darwin) system="aarch64-darwin" ;;
+              x86_64-darwin)  system="x86_64-darwin" ;; # keep separate if it ever appears
+              linux)          system="x86_64-linux" ;;
+              darwin)         system="aarch64-darwin" ;; # assume arm mac runner
+              *)              system="unknown" ;;
+            esac
+            # Append failures
+            if grep -q '^FAIL_PKG ' "$f"; then
+              grep '^FAIL_PKG ' "$f" | awk '{print $2}' >> "failed/${system}.txt"
+            fi
           done
-          # Deduplicate lines
-          for sysfile in failed/*.txt 2>/dev/null; do
+
+          # Deduplicate (only if files exist)
+          for sysfile in failed/*.txt; do
+            [ -s "$sysfile" ] || continue
             sort -u "$sysfile" -o "$sysfile"
           done
+
           echo "Failure files produced:"
-          ls -1 failed || true
+            ls -1 failed || true
           echo "Preview contents:"
-          for sysfile in failed/*.txt 2>/dev/null; do
+          for sysfile in failed/*.txt; do
             echo "== $(basename "$sysfile") =="
             cat "$sysfile"
-          done
+            echo
+          done || true
 
       - name: Prepare PR body
         id: pr_body
@@ -191,7 +203,6 @@ jobs:
             if [ -s "$file" ]; then
               count=$(wc -l < "$file")
               echo "### ${pretty} (${count})"
-              # Bullet list
               sed 's/^/* /' "$file"
               echo
             fi
@@ -207,16 +218,10 @@ jobs:
               echo "All packages built successfully on all platforms."
               echo
             else
-              # Canonical sections
               section x86_64-linux "x86_64-linux"
               section aarch64-darwin "aarch64-darwin"
-              # Anything unexpected
-              for f in failed/*.txt 2>/dev/null; do
-                sys=$(basename "$f" .txt)
-                if [ "$sys" != "x86_64-linux" ] && [ "$sys" != "aarch64-darwin" ]; then
-                  section "$sys" "$sys"
-                fi
-              done
+              section x86_64-darwin "x86_64-darwin"
+              section unknown "unknown"
             fi
             echo "</details>"
           } > pr_body.txt
@@ -260,3 +265,4 @@ jobs:
           branch: update-r-modules-${{ needs.setup-chunks.outputs.branch_date }}
           title: "Update R module JSONs for ${{ needs.setup-chunks.outputs.branch_date }}"
           body: ${{ steps.pr_body.outputs.body }}
+          

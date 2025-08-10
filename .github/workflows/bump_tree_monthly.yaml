@@ -41,7 +41,7 @@ jobs:
           else
             branch_date=$(date '+%Y-%m-%d')
           fi
-            echo "Using branch_date=$branch_date"
+          echo "Using branch_date=$branch_date"
           echo "branch_date=$branch_date" >> $GITHUB_OUTPUT
       - name: Fetch rPackages attribute names
         run: |
@@ -49,13 +49,11 @@ jobs:
             github:rstats-on-nix/nixpkgs/${{ steps.set_date.outputs.branch_date }}#rPackages \
             --apply builtins.attrNames > rpackages.json
           jq -r '.[]' rpackages.json > rpackages.csv
-          echo "Total package attrs:"
           wc -l rpackages.csv
       - name: Limit to first 10 packages (testing)
         run: |
           head -n 10 rpackages.csv > rpackages.first10
           mv rpackages.first10 rpackages.csv
-          echo "Selected package count:"
           wc -l rpackages.csv
       - name: Split packages into chunks of 2
         id: split
@@ -64,8 +62,6 @@ jobs:
           split -l 2 -d -a 3 rpackages.csv chunks/chunk_
           chunks_json=$(printf '%s\n' chunks/chunk_* | jq -R -s -c 'split("\n")[:-1]')
           echo "chunks=$chunks_json" >> $GITHUB_OUTPUT
-          printf 'Created chunk files:\n'
-          ls -1 chunks
       - name: Upload chunk files
         uses: actions/upload-artifact@v4
         with:
@@ -96,7 +92,6 @@ jobs:
         run: |
           fname=$(basename "${{ matrix.chunk_file }}")
           echo "id=$fname" >> $GITHUB_OUTPUT
-          echo "Chunk ID: $fname (branch_date=${{ needs.setup-chunks.outputs.branch_date }})"
       - name: Build packages
         continue-on-error: true
         run: |
@@ -110,28 +105,33 @@ jobs:
           esac
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
           chunk_id="${{ steps.chunk_id.outputs.id }}"
-          logfile="logs/build-${system}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
+          logfile="logs/build-${system}-${chunk_id}-${branch_date}.log"
           mkdir -p logs
-          {
-            echo "SYSTEM ${system}"
-            echo "BRANCH_DATE ${branch_date}"
-            echo "CHUNK ${chunk_id}"
-            echo "START $(date -u +%FT%TZ)"
-          } >>"$logfile"
+          failfile="fail-${system}.txt"
           while read pkg; do
-            echo "=== Building $pkg (date $branch_date system $system) ===" | tee -a "$logfile"
+            echo "=== Building $pkg ($system $branch_date) ===" | tee -a "$logfile"
             if nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" >>"$logfile" 2>&1; then
-              echo "SUCCESS_PKG $pkg" >>"$logfile"
+              echo "SUCCESS $pkg" >>"$logfile"
             else
-              echo "FAIL_PKG $pkg" >>"$logfile"
+              echo "FAIL $pkg" >>"$logfile"
+              echo "$pkg" >> "$failfile"
             fi
           done < "${{ matrix.chunk_file }}"
-          echo "FINISH $(date -u +%FT%TZ)" >>"$logfile"
-      - name: Upload build log
+          mkdir -p fail_out
+          if [ -f "$failfile" ]; then
+            sort -u "$failfile" > "fail_out/${system}.txt"
+          fi
+      - name: Upload logs
         uses: actions/upload-artifact@v4
         with:
           name: logs-${{ matrix.os }}-${{ steps.chunk_id.outputs.id }}
           path: logs/
+      - name: Upload fail list
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fails-${{ matrix.os }}-${{ steps.chunk_id.outputs.id }}
+          path: fail_out/
 
   collect-results:
     needs:
@@ -139,46 +139,30 @@ jobs:
       - build-chunk
     runs-on: ubuntu-latest
     steps:
-      - name: Confirm branch_date
-        run: echo "branch_date=${{ needs.setup-chunks.outputs.branch_date }}"
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
-      - name: Aggregate failed packages (per system)
+      - name: Aggregate failures
         id: aggregate
         run: |
-          set -euo pipefail
-          shopt -s nullglob
           mkdir -p failed
-          for f in artifacts/**/build-*.log; do
-            fname=$(basename "$f")
-            rest=${fname#build-}
-            rawsys=${rest%%-*}
-            case "$rawsys" in
-              linux)          system="x86_64-linux" ;;
-              darwin)         system="aarch64-darwin" ;;  # assuming arm runners
-              x86_64-linux)   system="x86_64-linux" ;;
-              aarch64-darwin) system="aarch64-darwin" ;;
-              x86_64-darwin)  system="x86_64-darwin" ;;
-              *)              system="unknown" ;;
-            esac
-            if grep -q '^FAIL_PKG ' "$f"; then
-              grep '^FAIL_PKG ' "$f" | awk '{print $2}' >> "failed/${system}.txt"
-            fi
+          shopt -s nullglob
+          # Copy all per-system fail files from any artifact
+          for f in artifacts/**/fail_out/*.txt; do
+            sys=$(basename "$f")
+            cat "$f" >> "failed/$sys"
           done
-          for sysfile in failed/*.txt 2>/dev/null; do
-            [ -s "$sysfile" ] && sort -u "$sysfile" -o "$sysfile"
+          # Deduplicate each system file
+          for f in failed/*.txt; do
+            sort -u "$f" -o "$f"
           done
-          echo "Failure files:"
+          echo "Aggregated failure files:"
           ls -1 failed || true
-          echo "Contents:"
-          for sysfile in failed/*.txt 2>/dev/null; do
-            echo "== $(basename "$sysfile") =="; cat "$sysfile"; echo
+          echo "-----"
+          for f in failed/*.txt 2>/dev/null; do
+            echo "== $f =="; cat "$f"; echo
           done
-
       - name: Prepare PR body
         id: pr_body
         run: |
@@ -189,43 +173,25 @@ jobs:
             for f in failed/*.txt 2>/dev/null; do
               [ -s "$f" ] && any=true
             done
-            if [ "$any" = false ]; then
+            if ! $any; then
               echo "All packages built successfully on all platforms."
               echo
             else
-              # Order: linux, darwin, then others if present
-              if [ -s failed/x86_64-linux.txt ]; then
-                count=$(wc -l < failed/x86_64-linux.txt)
-                echo "x86_64-linux (${count}):"
-                cat failed/x86_64-linux.txt
-                echo
-              fi
-              if [ -s failed/aarch64-darwin.txt ]; then
-                count=$(wc -l < failed/aarch64-darwin.txt)
-                echo "aarch64-darwin (${count}):"
-                cat failed/aarch64-darwin.txt
-                echo
-              fi
-              if [ -s failed/x86_64-darwin.txt ]; then
-                count=$(wc -l < failed/x86_64-darwin.txt)
-                echo "x86_64-darwin (${count}):"
-                cat failed/x86_64-darwin.txt
-                echo
-              fi
-              if [ -s failed/unknown.txt ]; then
-                count=$(wc -l < failed/unknown.txt)
-                echo "unknown (${count}):"
-                cat failed/unknown.txt
-                echo
-              fi
+              # Ordered output
+              for sys in x86_64-linux aarch64-darwin x86_64-darwin unknown; do
+                file="failed/${sys}.txt"
+                if [ -s "$file" ]; then
+                  echo "${sys}:"
+                  cat "$file"
+                  echo
+                fi
+              done
             fi
             echo "</details>"
           } > pr_body.txt
-          echo "PR body preview:"
           cat pr_body.txt
           body_json=$(jq -Rs . < pr_body.txt)
           echo "body=$body_json" >> $GITHUB_OUTPUT
-
       - name: Checkout target repo master
         uses: actions/checkout@v4
         with:
@@ -234,7 +200,6 @@ jobs:
           path: target-nixpkgs
           fetch-depth: 0
           token: ${{ secrets.MY_PAT }}
-
       - name: Import JSON files from dated branch
         working-directory: target-nixpkgs
         run: |
@@ -246,7 +211,6 @@ jobs:
                                        pkgs/development/r-modules/bioc-packages.json \
                                        pkgs/development/r-modules/cran-packages.json
           git diff --name-status pkgs/development/r-modules/*.json || true
-
       - name: Create PR with JSON updates
         uses: peter-evans/create-pull-request@v6
         with:
@@ -258,6 +222,6 @@ jobs:
             pkgs/development/r-modules/bioc-packages.json
             pkgs/development/r-modules/cran-packages.json
           base: master
-          branch: update-r-modules-${{ needs.setup-chunks.outputs.branch_date }}
+            branch: update-r-modules-${{ needs.setup-chunks.outputs.branch_date }}
           title: "Update R module JSONs for ${{ needs.setup-chunks.outputs.branch_date }}"
           body: ${{ steps.pr_body.outputs.body }}

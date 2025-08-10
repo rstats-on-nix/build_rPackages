@@ -28,13 +28,11 @@ jobs:
             echo "ERROR: secrets.MY_PAT is not defined."
             exit 1
           fi
-
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: cachix/cachix-action@v15
         with:
           name: rstats-on-nix
-
       - name: Determine branch_date
         id: set_date
         run: |
@@ -45,7 +43,6 @@ jobs:
           fi
           echo "Using branch_date=$branch_date"
           echo "branch_date=$branch_date" >> $GITHUB_OUTPUT
-
       - name: Fetch rPackages attribute names
         run: |
           nix eval --json \
@@ -54,14 +51,12 @@ jobs:
           jq -r '.[]' rpackages.json > rpackages.csv
           echo "Total package attrs:"
           wc -l rpackages.csv
-
       - name: Limit to first 10 packages (testing)
         run: |
           head -n 10 rpackages.csv > rpackages.first10
           mv rpackages.first10 rpackages.csv
           echo "Selected package count:"
           wc -l rpackages.csv
-
       - name: Split packages into chunks of 2
         id: split
         run: |
@@ -71,12 +66,11 @@ jobs:
           echo "chunks=$chunks_json" >> $GITHUB_OUTPUT
           printf 'Created chunk files:\n'
           ls -1 chunks
-
       - name: Upload chunk files
         uses: actions/upload-artifact@v4
         with:
-            name: package-chunks
-            path: chunks/
+          name: package-chunks
+          path: chunks/
 
   build-chunk:
     needs: setup-chunks
@@ -92,44 +86,48 @@ jobs:
       - uses: cachix/cachix-action@v15
         with:
           name: rstats-on-nix
-
       - name: Download chunk file
         uses: actions/download-artifact@v4
         with:
           name: package-chunks
           path: chunks
-
       - name: Derive chunk ID
         id: chunk_id
         run: |
           fname=$(basename "${{ matrix.chunk_file }}")
           echo "id=$fname" >> $GITHUB_OUTPUT
           echo "Chunk ID: $fname (branch_date=${{ needs.setup-chunks.outputs.branch_date }})"
-
       - name: Build packages
         continue-on-error: true
         run: |
+          # Derive Nix system string without relying on builtins.currentSystem
+          uname_s=$(uname -s)
+          uname_m=$(uname -m)
+          case "${uname_s}-${uname_m}" in
+            Linux-x86_64)   system="x86_64-linux" ;;
+            Darwin-arm64)   system="aarch64-darwin" ;;
+            Darwin-x86_64)  system="x86_64-darwin" ;; # fallback if Intel mac runner
+            *)              system="${uname_m}-unknown" ;;
+          esac
           branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
           chunk_id="${{ steps.chunk_id.outputs.id }}"
-          system=$(nix eval --raw --expr builtins.currentSystem)
           logfile="logs/build-${system}-${chunk_id}-${branch_date}-${{ github.run_id }}.log"
           mkdir -p logs
           {
             echo "SYSTEM ${system}"
             echo "BRANCH_DATE ${branch_date}"
             echo "CHUNK ${chunk_id}"
+            echo "START $(date -u +%FT%TZ)"
           } >>"$logfile"
           while read pkg; do
             echo "=== Building $pkg (date $branch_date system $system) ===" | tee -a "$logfile"
             if nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" >>"$logfile" 2>&1; then
               echo "success $pkg" >>"$logfile"
             else
-              # Our canonical failure marker (simple, parsable)
               echo "removing $pkg" >>"$logfile"
             fi
           done < "${{ matrix.chunk_file }}"
-          echo "Finished chunk $chunk_id" >>"$logfile"
-
+          echo "FINISH $(date -u +%FT%TZ)" >>"$logfile"
       - name: Upload build log
         uses: actions/upload-artifact@v4
         with:
@@ -144,33 +142,26 @@ jobs:
     steps:
       - name: Confirm branch_date
         run: echo "branch_date=${{ needs.setup-chunks.outputs.branch_date }}"
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-
       - name: Aggregate failed packages (per system)
         id: aggregate
         run: |
           mkdir -p failed
-          # Parse each log: system encoded in filename build-<system>-...
           shopt -s nullglob
-            for f in artifacts/**/build-*.log; do
-              base=$(basename "$f")
-              # build-<system>-<chunk>-<date>-<runid>.log
-              system=$(echo "$base" | cut -d- -f2)
-              grep '^removing ' "$f" | sed 's/^removing //' >> "failed/${system}.txt" || true
-            done
+          for f in artifacts/**/build-*.log; do
+            base=$(basename "$f")
+            # build-<system>-<chunk>-<date>-<runid>.log
+            system=$(echo "$base" | cut -d- -f2- | cut -d- -f1) # first segment after 'build'
+            grep '^removing ' "$f" | sed 's/^removing //' >> "failed/${system}.txt" || true
+          done
           for sysfile in failed/*.txt; do
             sort -u "$sysfile" -o "$sysfile"
           done
-          echo "Collected failure lists:"
+          echo "Failure files:"
           ls -1 failed || true
-          # Produce a JSON summary for potential future use
-          jq -Rn '
-            [inputs] | split("\n") | map(select(length>0))' < /dev/null >/dev/null 2>&1 || true
-
       - name: Prepare PR body
         id: pr_body
         run: |
@@ -180,7 +171,7 @@ jobs:
             if [ -s "$file" ]; then
               count=$(wc -l < "$file")
               echo "### ${sys} (${count})"
-              cat "$file"
+              sed 's/^/* /' "$file"
               echo
             fi
           }
@@ -190,20 +181,15 @@ jobs:
             any=false
             if ls failed/*.txt >/dev/null 2>&1; then
               for sfile in failed/*.txt; do
-                sys=$(basename "$sfile" .txt)
-                if [ -s "$sfile" ]; then
-                  any=true
-                fi
+                [ -s "$sfile" ] && any=true
               done
             fi
             if [ "$any" = false ]; then
               echo "All packages built successfully on all platforms."
               echo
             else
-              # Fixed order for the two systems we expect
               gen_section x86_64-linux
               gen_section aarch64-darwin
-              # Include any unexpected systems just in case
               for sfile in failed/*.txt; do
                 sys=$(basename "$sfile" .txt)
                 if [ "$sys" != "x86_64-linux" ] && [ "$sys" != "aarch64-darwin" ]; then
@@ -213,12 +199,8 @@ jobs:
             fi
             echo "</details>"
           } > pr_body.txt
-          echo "----- PR BODY -----"
-          cat pr_body.txt
-          echo "-------------------"
           body_json=$(jq -Rs . < pr_body.txt)
           echo "body=$body_json" >> $GITHUB_OUTPUT
-
       - name: Checkout target repo master
         uses: actions/checkout@v4
         with:
@@ -227,21 +209,17 @@ jobs:
           path: target-nixpkgs
           fetch-depth: 0
           token: ${{ secrets.MY_PAT }}
-
       - name: Import JSON files from dated branch
         working-directory: target-nixpkgs
         run: |
           date_branch="${{ needs.setup-chunks.outputs.branch_date }}"
-          echo "Fetching dated branch: $date_branch"
           git fetch origin "$date_branch:$date_branch" --depth=1
           git checkout master
           git checkout "$date_branch" -- pkgs/development/r-modules/bioc-annotation-packages.json \
                                        pkgs/development/r-modules/bioc-experiment-packages.json \
                                        pkgs/development/r-modules/bioc-packages.json \
                                        pkgs/development/r-modules/cran-packages.json
-          echo "Diff after importing JSON files:"
           git diff --name-status pkgs/development/r-modules/*.json || true
-
       - name: Create PR with JSON updates
         uses: peter-evans/create-pull-request@v6
         with:

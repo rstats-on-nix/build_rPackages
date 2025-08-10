@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: '0 0 1 * *'   # Monthly on the 1st at 00:00 UTC
 
+# (PAT is used, so these permissions blocks are not strictly required, but harmless.)
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   setup-chunks:
     runs-on: ubuntu-latest
@@ -13,6 +18,14 @@ jobs:
       branch_date: ${{ steps.set_date.outputs.branch_date }}
       chunks: ${{ steps.split.outputs.chunks }}
     steps:
+      - name: Verify PAT secret exists (early fail if missing)
+        run: |
+          if [ -z "${{ secrets.MY_PAT }}" ]; then
+            echo "ERROR: secrets.MY_PAT is not defined in this (source) repository."
+            echo "Define a PAT with 'repo' scope (classic) or fine-grained read/write contents access to rstats-on-nix/nixpkgs."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
 
       - uses: DeterminateSystems/nix-installer-action@main
@@ -113,7 +126,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-            path: artifacts
+          path: artifacts
 
       - name: Aggregate failed packages
         id: aggregate
@@ -125,7 +138,7 @@ jobs:
           echo "Failed packages (if any):"
           cat failed/failed.txt || true
 
-      - name: Prepare PR body (summary only; no result files committed)
+      - name: Prepare PR body (summary only)
         id: pr_body
         run: |
           echo "<details><summary>Failed packages</summary>" > pr_body.txt
@@ -141,16 +154,16 @@ jobs:
           body_json=$(jq -Rs . <<< "$body")
           echo "body=$body_json" >> $GITHUB_OUTPUT
 
-      - name: Checkout target repo rstats-on-nix/nixpkgs (master)
+      - name: Checkout target repo (master) with PAT
         uses: actions/checkout@v4
         with:
           repository: rstats-on-nix/nixpkgs
-          token: ${{ secrets.MY_PAT }}
           ref: master
           path: target-nixpkgs
           fetch-depth: 0
+          token: ${{ secrets.MY_PAT }}
 
-      - name: Import JSON files from dated branch (update only those files)
+      - name: Import JSON files from dated branch
         working-directory: target-nixpkgs
         run: |
           date_branch="${{ needs.setup-chunks.outputs.branch_date }}"
@@ -162,13 +175,13 @@ jobs:
                                         pkgs/development/r-modules/bioc-experiment-packages.json \
                                         pkgs/development/r-modules/bioc-packages.json \
                                         pkgs/development/r-modules/cran-packages.json || true
-            echo "Imported JSON files."
+            echo "Imported JSON files from $date_branch."
           else
             echo "No dated branch $date_branch found; skipping JSON import."
           fi
           ls -lh pkgs/development/r-modules/*.json || true
 
-      - name: Create PR (only JSON file updates; build results remain as artifacts & PR body text)
+      - name: Create PR (JSON updates only)
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.MY_PAT }}

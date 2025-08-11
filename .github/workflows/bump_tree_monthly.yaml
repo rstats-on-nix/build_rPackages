@@ -53,12 +53,12 @@ jobs:
           
       # MODIFICATION: The testing limit has been removed.
 
-      # MODIFICATION: The chunk size has been increased for production runs.
-      - name: Split packages into chunks of 500
+      # MODIFICATION: The chunk size has been changed to 300 packages.
+      - name: Split packages into chunks of 300
         id: split
         run: |
           mkdir chunks
-          split -l 500 -d -a 3 rpackages.csv chunks/chunk_
+          split -l 300 -d -a 3 rpackages.csv chunks/chunk_
           chunks_json=$(printf '%s\n' chunks/chunk_* | jq -R -s -c 'split("\n")[:-1]')
           echo "chunks=$chunks_json" >> $GITHUB_OUTPUT
       - name: Upload chunk files
@@ -152,6 +152,8 @@ jobs:
       - setup-chunks
       - build-chunk
     runs-on: ubuntu-latest
+    # MODIFICATION: Always run this job even if some build chunks fail
+    if: always() && needs.setup-chunks.result == 'success'
     steps:
       - name: Aggregate failures from job outputs
         id: aggregate
@@ -188,8 +190,19 @@ jobs:
       - name: Prepare PR body
         id: pr_body
         run: |
+          # MODIFICATION: Include information about build job status
+          build_status="${{ needs.build-chunk.result }}"
+          
           shopt -s nullglob
           {
+            echo "<details><summary>Build Status</summary>"
+            echo
+            echo "**Build jobs result:** $build_status"
+            echo
+            echo "Note: PR created regardless of individual chunk failures to ensure updates are applied."
+            echo
+            echo "</details>"
+            echo
             echo "<details><summary>Failed packages</summary>"
             echo
             any=false
@@ -236,6 +249,7 @@ jobs:
                                        pkgs/development/r-modules/bioc-packages.json \
                                        pkgs/development/r-modules/cran-packages.json
           git diff --name-status pkgs/development/r-modules/*.json || true
+      # MODIFICATION: This step now always runs when collect-results runs
       - name: Create PR with JSON updates
         uses: peter-evans/create-pull-request@v6
         with:

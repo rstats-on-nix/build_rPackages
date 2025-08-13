@@ -15,6 +15,76 @@ permissions:
   contents: read
   pull-requests: read
 
+# Define the shared build steps once using a YAML anchor to avoid repetition.
+# This entire block will be reused in the Linux and macOS build jobs.
+x-build-steps: &build_steps
+  - uses: actions/checkout@v4
+  - uses: DeterminateSystems/nix-installer-action@main
+  - uses: cachix/cachix-action@v15
+    with:
+      name: rstats-on-nix
+  - name: Download chunk file
+    uses: actions/download-artifact@v4
+    with:
+      name: package-chunks
+      path: chunks
+  - name: Derive chunk ID
+    id: chunk_id
+    run: |
+      fname=$(basename "${{ matrix.chunk_file }}")
+      echo "id=$fname" >> $GITHUB_OUTPUT
+  - name: Build packages
+    id: build
+    continue-on-error: true
+    run: |
+      uname_s=$(uname -s)
+      uname_m=$(uname -m)
+      case "${uname_s}-${uname_m}" in
+        Linux-x86_64)   system="x86_64-linux" ;;
+        Darwin-arm64)   system="aarch64-darwin" ;;
+        Darwin-x86_64)  system="x86_64-darwin" ;;
+        *)              system="${uname_m}-unknown" ;;
+      esac
+      echo "system=$system" >> $GITHUB_OUTPUT
+
+      branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
+      chunk_id="${{ steps.chunk_id.outputs.id }}"
+      logfile="logs/build-${system}-${chunk_id}-${branch_date}.log"
+      failfile="fail-${system}.txt"
+      mkdir -p logs
+      
+      while read pkg; do
+        echo "=== Building $pkg ($system $branch_date) ===" | tee -a "$logfile"
+        if nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" >>"$logfile" 2>&1; then
+          echo "SUCCESS $pkg" >>"$logfile"
+        else
+          echo "FAIL $pkg" >>"$logfile"
+          echo "$pkg" >> "$failfile"
+        fi
+      done < "${{ matrix.chunk_file }}"
+
+      mkdir -p fail_out
+      if [ -f "$failfile" ]; then
+        sort -u "$failfile" > "fail_out/${system}.txt"
+      fi
+  - name: Set failure outputs
+    id: set_outputs
+    run: |
+      system="${{ steps.build.outputs.system }}"
+      fail_file="fail_out/${system}.txt"
+      
+      echo "system=${system}" >> $GITHUB_OUTPUT
+
+      if [ -f "$fail_file" ]; then
+        {
+          echo 'failed_packages<<EOF'
+          cat "$fail_file"
+          echo EOF
+        } >> $GITHUB_OUTPUT
+      else
+        echo "failed_packages=" >> $GITHUB_OUTPUT
+      fi
+
 jobs:
   setup-chunks:
     runs-on: ubuntu-latest
@@ -50,10 +120,6 @@ jobs:
             --apply builtins.attrNames > rpackages.json
           jq -r '.[]' rpackages.json > rpackages.csv
           wc -l rpackages.csv
-          
-      # MODIFICATION: The testing limit has been removed.
-
-      # MODIFICATION: The chunk size has been changed to 300 packages.
       - name: Split packages into chunks of 300
         id: split
         run: |
@@ -67,92 +133,43 @@ jobs:
           name: package-chunks
           path: chunks/
 
-  build-chunk:
+  build-linux:
     needs: setup-chunks
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # MODIFICATION: Higher concurrency limit for Linux runners
+      max-parallel: 15 
       matrix:
-        os: [ubuntu-latest, macos-latest]
         chunk_file: ${{ fromJson(needs.setup-chunks.outputs.chunks) }}
     outputs:
       system: ${{ steps.set_outputs.outputs.system }}
       failed_packages: ${{ steps.set_outputs.outputs.failed_packages }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: cachix/cachix-action@v15
-        with:
-          name: rstats-on-nix
-      - name: Download chunk file
-        uses: actions/download-artifact@v4
-        with:
-          name: package-chunks
-          path: chunks
-      - name: Derive chunk ID
-        id: chunk_id
-        run: |
-          fname=$(basename "${{ matrix.chunk_file }}")
-          echo "id=$fname" >> $GITHUB_OUTPUT
-      - name: Build packages
-        id: build
-        continue-on-error: true
-        run: |
-          uname_s=$(uname -s)
-          uname_m=$(uname -m)
-          case "${uname_s}-${uname_m}" in
-            Linux-x86_64)   system="x86_64-linux" ;;
-            Darwin-arm64)   system="aarch64-darwin" ;;
-            Darwin-x86_64)  system="x86_64-darwin" ;;
-            *)              system="${uname_m}-unknown" ;;
-          esac
-          echo "system=$system" >> $GITHUB_OUTPUT
+    # MODIFICATION: Use the anchored steps
+    steps: *build_steps
 
-          branch_date="${{ needs.setup-chunks.outputs.branch_date }}"
-          chunk_id="${{ steps.chunk_id.outputs.id }}"
-          logfile="logs/build-${system}-${chunk_id}-${branch_date}.log"
-          failfile="fail-${system}.txt"
-          mkdir -p logs
-          
-          while read pkg; do
-            echo "=== Building $pkg ($system $branch_date) ===" | tee -a "$logfile"
-            if nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" >>"$logfile" 2>&1; then
-              echo "SUCCESS $pkg" >>"$logfile"
-            else
-              echo "FAIL $pkg" >>"$logfile"
-              echo "$pkg" >> "$failfile"
-            fi
-          done < "${{ matrix.chunk_file }}"
-
-          mkdir -p fail_out
-          if [ -f "$failfile" ]; then
-            sort -u "$failfile" > "fail_out/${system}.txt"
-          fi
-      
-      - name: Set failure outputs
-        id: set_outputs
-        run: |
-          system="${{ steps.build.outputs.system }}"
-          fail_file="fail_out/${system}.txt"
-          
-          echo "system=${system}" >> $GITHUB_OUTPUT
-
-          if [ -f "$fail_file" ]; then
-            {
-              echo 'failed_packages<<EOF'
-              cat "$fail_file"
-              echo EOF
-            } >> $GITHUB_OUTPUT
-          else
-            echo "failed_packages=" >> $GITHUB_OUTPUT
-          fi
+  build-macos:
+    needs: setup-chunks
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      # MODIFICATION: Stricter concurrency limit for scarce macOS runners
+      max-parallel: 5
+      matrix:
+        chunk_file: ${{ fromJson(needs.setup-chunks.outputs.chunks) }}
+    outputs:
+      system: ${{ steps.set_outputs.outputs.system }}
+      failed_packages: ${{ steps.set_outputs.outputs.failed_packages }}
+    # MODIFICATION: Reuse the same anchored steps
+    steps: *build_steps
 
   collect-results:
     needs:
       - setup-chunks
-      - build-chunk
+      # MODIFICATION: Depend on the new split build jobs
+      - build-linux
+      - build-macos
     runs-on: ubuntu-latest
-    # MODIFICATION: Always run this job even if some build chunks fail
     if: always() && needs.setup-chunks.result == 'success'
     steps:
       - name: Aggregate failures from job outputs
@@ -160,20 +177,30 @@ jobs:
         run: |
           mkdir -p failed
           
-          RAW_JSON='${{ toJSON(needs.build-chunk.outputs) }}'
+          # MODIFICATION: Process outputs from both build jobs
+          RAW_JSON_LINUX='${{ toJSON(needs.build-linux.outputs) }}'
+          RAW_JSON_MACOS='${{ toJSON(needs.build-macos.outputs) }}'
+          
+          process_outputs() {
+            local json_input=$1
+            local job_name=$2
+            # The JSON structure is different if only one chunk is run vs multiple
+            local normalized_json=$(echo "$json_input" | jq 'if ((type == "object") and (.system | type == "string")) then { "single_job": . } else . end')
+            
+            echo "$normalized_json" | jq -c '.[]' | \
+            while read -r line; do
+              system=$(echo "$line" | jq -r .system)
+              packages=$(echo "$line" | jq -r .failed_packages)
 
-          NORMALIZED_JSON=$(echo "$RAW_JSON" | jq 'if ((type == "object") and (.system | type == "string")) then { "single_job": . } else . end')
-
-          echo "$NORMALIZED_JSON" | jq -c '.[]' | \
-          while read -r line; do
-            system=$(echo "$line" | jq -r .system)
-            packages=$(echo "$line" | jq -r .failed_packages)
-
-            if [ -n "$packages" ]; then
-              echo "Failures reported for system: $system"
-              echo "$packages" >> "failed/${system}.txt"
-            fi
-          done
+              if [ -n "$packages" ]; then
+                echo "Failures reported for system: $system from job: $job_name"
+                echo "$packages" >> "failed/${system}.txt"
+              fi
+            done
+          }
+          
+          process_outputs "$RAW_JSON_LINUX" "build-linux"
+          process_outputs "$RAW_JSON_MACOS" "build-macos"
 
           shopt -s nullglob
           for f in failed/*.txt; do
@@ -190,14 +217,22 @@ jobs:
       - name: Prepare PR body
         id: pr_body
         run: |
-          # MODIFICATION: Include information about build job status
-          build_status="${{ needs.build-chunk.result }}"
+          # The result of the whole matrix is the "worst" result of any job
+          linux_status="${{ needs.build-linux.result }}"
+          macos_status="${{ needs.build-macos.result }}"
+          final_status="success"
+          if [[ "$linux_status" == "failure" || "$macos_status" == "failure" ]]; then
+            final_status="failure"
+          elif [[ "$linux_status" == "cancelled" || "$macos_status" == "cancelled" ]]; then
+            final_status="cancelled"
+          fi
           
           shopt -s nullglob
           {
             echo "<details><summary>Build Status</summary>"
             echo
-            echo "**Build jobs result:** $build_status"
+            echo "**Linux build jobs result:** ${linux_status}"
+            echo "**macOS build jobs result:** ${macos_status}"
             echo
             echo "Note: PR created regardless of individual chunk failures to ensure updates are applied."
             echo
@@ -227,8 +262,13 @@ jobs:
             echo "</details>"
           } > pr_body.txt
           cat pr_body.txt
-          body_json=$(jq -Rs . < pr_body.txt)
-          echo "body=$body_json" >> $GITHUB_OUTPUT
+          
+          # Correctly handle multiline output for the PR body
+          {
+            echo 'body<<EOF'
+            cat pr_body.txt
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
 
       - name: Checkout target repo master
         uses: actions/checkout@v4
@@ -249,7 +289,6 @@ jobs:
                                        pkgs/development/r-modules/bioc-packages.json \
                                        pkgs/development/r-modules/cran-packages.json
           git diff --name-status pkgs/development/r-modules/*.json || true
-      # MODIFICATION: This step now always runs when collect-results runs
       - name: Create PR with JSON updates
         uses: peter-evans/create-pull-request@v6
         with:

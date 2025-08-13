@@ -1,0 +1,93 @@
+name: Reusable Build Chunk
+
+on:
+  workflow_call:
+    inputs:
+      chunk_file:
+        required: true
+        type: string
+      branch_date:
+        required: true
+        type: string
+    outputs:
+      system:
+        description: "The system identifier (e.g., x86_64-linux)"
+        value: ${{ jobs.build.outputs.system }}
+      failed_packages:
+        description: "A newline-separated list of packages that failed to build"
+        value: ${{ jobs.build.outputs.failed_packages }}
+
+jobs:
+  build:
+    # The runner OS is provided by the calling workflow.
+    runs-on: ${{ github.job.runner.os }}
+    outputs:
+      system: ${{ steps.set_outputs.outputs.system }}
+      failed_packages: ${{ steps.set_outputs.outputs.failed_packages }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: cachix/cachix-action@v15
+        with:
+          name: rstats-on-nix
+      - name: Download chunk file
+        uses: actions/download-artifact@v4
+        with:
+          name: package-chunks
+          path: chunks
+      - name: Derive chunk ID
+        id: chunk_id
+        run: |
+          fname=$(basename "${{ inputs.chunk_file }}")
+          echo "id=$fname" >> $GITHUB_OUTPUT
+      - name: Build packages
+        id: build
+        continue-on-error: true
+        run: |
+          uname_s=$(uname -s)
+          uname_m=$(uname -m)
+          case "${uname_s}-${uname_m}" in
+            Linux-x86_64)   system="x86_64-linux" ;;
+            Darwin-arm64)   system="aarch64-darwin" ;;
+            Darwin-x86_64)  system="x86_64-darwin" ;;
+            *)              system="${uname_m}-unknown" ;;
+          esac
+          echo "system=$system" >> $GITHUB_OUTPUT
+
+          branch_date="${{ inputs.branch_date }}"
+          chunk_id="${{ steps.chunk_id.outputs.id }}"
+          logfile="logs/build-${system}-${chunk_id}-${branch_date}.log"
+          failfile="fail-${system}.txt"
+          mkdir -p logs
+          
+          while read pkg; do
+            echo "=== Building $pkg ($system $branch_date) ===" | tee -a "$logfile"
+            if nix build -j auto --keep-going "github:rstats-on-nix/nixpkgs/${branch_date}#rPackages.$pkg" >>"$logfile" 2>&1; then
+              echo "SUCCESS $pkg" >>"$logfile"
+            else
+              echo "FAIL $pkg" >>"$logfile"
+              echo "$pkg" >> "$failfile"
+            fi
+          done < "${{ inputs.chunk_file }}"
+
+          mkdir -p fail_out
+          if [ -f "$failfile" ]; then
+            sort -u "$failfile" > "fail_out/${system}.txt"
+          fi
+      - name: Set failure outputs
+        id: set_outputs
+        run: |
+          system="${{ steps.build.outputs.system }}"
+          fail_file="fail_out/${system}.txt"
+          
+          echo "system=${system}" >> $GITHUB_OUTPUT
+
+          if [ -f "$fail_file" ]; then
+            {
+              echo 'failed_packages<<EOF'
+              cat "$fail_file"
+              echo EOF
+            } >> $GITHUB_OUTPUT
+          else
+            echo "failed_packages=" >> $GITHUB_OUTPUT
+          fi

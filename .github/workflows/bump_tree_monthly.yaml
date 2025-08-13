@@ -50,11 +50,11 @@ jobs:
             --apply builtins.attrNames > rpackages.json
           jq -r '.[]' rpackages.json > rpackages.csv
           wc -l rpackages.csv
-      - name: Split packages into chunks of 300
+      - name: Split packages into chunks of 250
         id: split
         run: |
           mkdir chunks
-          split -l 300 -d -a 3 rpackages.csv chunks/chunk_
+          split -l 250 -d -a 3 rpackages.csv chunks/chunk_
           chunks_json=$(printf '%s\n' chunks/chunk_* | jq -R -s -c 'split("\n")[:-1]')
           echo "chunks=$chunks_json" >> $GITHUB_OUTPUT
       - name: Upload chunk files

@@ -15,9 +15,9 @@ permissions:
   contents: read
   pull-requests: read
 
-# Define the shared build steps once using a YAML anchor to avoid repetition.
-# This entire block will be reused in the Linux and macOS build jobs.
-x-build-steps: &build_steps
+# MODIFICATION: Define reusable steps under a dot-prefixed key, which is ignored by the GitHub Actions parser.
+# The YAML anchor (&build_steps) is attached to the list of steps and can be reused below.
+.build_step_template: &build_steps
   - uses: actions/checkout@v4
   - uses: DeterminateSystems/nix-installer-action@main
   - uses: cachix/cachix-action@v15
@@ -138,14 +138,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # MODIFICATION: Higher concurrency limit for Linux runners
       max-parallel: 15 
       matrix:
         chunk_file: ${{ fromJson(needs.setup-chunks.outputs.chunks) }}
     outputs:
       system: ${{ steps.set_outputs.outputs.system }}
       failed_packages: ${{ steps.set_outputs.outputs.failed_packages }}
-    # MODIFICATION: Use the anchored steps
+    # MODIFICATION: The 'steps' key now uses the YAML alias to import the shared steps.
     steps: *build_steps
 
   build-macos:
@@ -153,20 +152,18 @@ jobs:
     runs-on: macos-latest
     strategy:
       fail-fast: false
-      # MODIFICATION: Stricter concurrency limit for scarce macOS runners
       max-parallel: 5
       matrix:
         chunk_file: ${{ fromJson(needs.setup-chunks.outputs.chunks) }}
     outputs:
       system: ${{ steps.set_outputs.outputs.system }}
       failed_packages: ${{ steps.set_outputs.outputs.failed_packages }}
-    # MODIFICATION: Reuse the same anchored steps
+    # MODIFICATION: The 'steps' key also uses the YAML alias here.
     steps: *build_steps
 
   collect-results:
     needs:
       - setup-chunks
-      # MODIFICATION: Depend on the new split build jobs
       - build-linux
       - build-macos
     runs-on: ubuntu-latest
@@ -177,14 +174,12 @@ jobs:
         run: |
           mkdir -p failed
           
-          # MODIFICATION: Process outputs from both build jobs
           RAW_JSON_LINUX='${{ toJSON(needs.build-linux.outputs) }}'
           RAW_JSON_MACOS='${{ toJSON(needs.build-macos.outputs) }}'
           
           process_outputs() {
             local json_input=$1
             local job_name=$2
-            # The JSON structure is different if only one chunk is run vs multiple
             local normalized_json=$(echo "$json_input" | jq 'if ((type == "object") and (.system | type == "string")) then { "single_job": . } else . end')
             
             echo "$normalized_json" | jq -c '.[]' | \
@@ -192,7 +187,7 @@ jobs:
               system=$(echo "$line" | jq -r .system)
               packages=$(echo "$line" | jq -r .failed_packages)
 
-              if [ -n "$packages" ]; then
+              if [ -n "$system" ] && [ -n "$packages" ]; then
                 echo "Failures reported for system: $system from job: $job_name"
                 echo "$packages" >> "failed/${system}.txt"
               fi
@@ -217,15 +212,8 @@ jobs:
       - name: Prepare PR body
         id: pr_body
         run: |
-          # The result of the whole matrix is the "worst" result of any job
           linux_status="${{ needs.build-linux.result }}"
           macos_status="${{ needs.build-macos.result }}"
-          final_status="success"
-          if [[ "$linux_status" == "failure" || "$macos_status" == "failure" ]]; then
-            final_status="failure"
-          elif [[ "$linux_status" == "cancelled" || "$macos_status" == "cancelled" ]]; then
-            final_status="cancelled"
-          fi
           
           shopt -s nullglob
           {
@@ -263,7 +251,6 @@ jobs:
           } > pr_body.txt
           cat pr_body.txt
           
-          # Correctly handle multiline output for the PR body
           {
             echo 'body<<EOF'
             cat pr_body.txt
@@ -302,4 +289,4 @@ jobs:
           base: master
           branch: update-r-modules-${{ needs.setup-chunks.outputs.branch_date }}
           title: "Update R module JSONs for ${{ needs.setup-chunks.outputs.branch_date }}"
-          body: ${{ steps.pr_body.outputs.body }}
+          body: ${{ steps.pr_body.outputs.body }}```

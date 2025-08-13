@@ -3,6 +3,10 @@ name: Reusable Build Chunk
 on:
   workflow_call:
     inputs:
+      # This input allows the calling workflow to specify the runner.
+      runner_os:
+        required: true
+        type: string
       chunk_file:
         required: true
         type: string
@@ -19,8 +23,8 @@ on:
 
 jobs:
   build:
-    # The runner OS is provided by the calling workflow.
-    runs-on: ${{ github.job.runner.os }}
+    # The runner OS is now dynamically set from the input parameter.
+    runs-on: ${{ inputs.runner_os }}
     outputs:
       system: ${{ steps.set_outputs.outputs.system }}
       failed_packages: ${{ steps.set_outputs.outputs.failed_packages }}

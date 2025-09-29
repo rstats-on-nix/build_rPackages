@@ -1,0 +1,33 @@
+* removing ‘/nix/store/3k5si5j4x2nqxk2s203c40xwprv8xwdy-r-Rcereal-1.3.2/library/Rcereal’
+       > * removing ‘/nix/store/3k5si5j4x2nqxk2s203c40xwprv8xwdy-r-Rcereal-1.3.2/library/Rcereal’
+/nix/store/v3ybfr0zvfnha2sj8x36x6q03c9r7s5v-r-RcppArmadillo-15.0.2-2/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:17: warning: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more. [-W#pragma-messages]
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+/nix/store/v3ybfr0zvfnha2sj8x36x6q03c9r7s5v-r-RcppArmadillo-15.0.2-2/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:17: warning: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more. [-W#pragma-messages]
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+/nix/store/v3ybfr0zvfnha2sj8x36x6q03c9r7s5v-r-RcppArmadillo-15.0.2-2/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:17: warning: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more. [-W#pragma-messages]
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+/nix/store/v3ybfr0zvfnha2sj8x36x6q03c9r7s5v-r-RcppArmadillo-15.0.2-2/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:17: warning: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more. [-W#pragma-messages]
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+* removing ‘/nix/store/fnkq9camr26kj4mbxnzjxcip0haf5hm0-r-misc3d-0.9-1/library/misc3d’
+       > * removing ‘/nix/store/fnkq9camr26kj4mbxnzjxcip0haf5hm0-r-misc3d-0.9-1/library/misc3d’
+* removing ‘/nix/store/khxf5wba2j7n08jayyphiz2i1d99wvxj-r-mongolite-4.0.0/library/mongolite’
+       > * removing ‘/nix/store/khxf5wba2j7n08jayyphiz2i1d99wvxj-r-mongolite-4.0.0/library/mongolite’
+/nix/store/v3ybfr0zvfnha2sj8x36x6q03c9r7s5v-r-RcppArmadillo-15.0.2-2/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:17: warning: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more. [-W#pragma-messages]
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+/nix/store/v3ybfr0zvfnha2sj8x36x6q03c9r7s5v-r-RcppArmadillo-15.0.2-2/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:17: warning: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more. [-W#pragma-messages]
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+/nix/store/v3ybfr0zvfnha2sj8x36x6q03c9r7s5v-r-RcppArmadillo-15.0.2-2/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:17: warning: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more. [-W#pragma-messages]
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+/nix/store/v3ybfr0zvfnha2sj8x36x6q03c9r7s5v-r-RcppArmadillo-15.0.2-2/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:17: warning: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more. [-W#pragma-messages]
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+* removing ‘/nix/store/789ckam1r4dqnndm9g42v8hnvx9zlfg9-r-ade4TkGUI-0.3.4/library/ade4TkGUI’
+       > * removing ‘/nix/store/789ckam1r4dqnndm9g42v8hnvx9zlfg9-r-ade4TkGUI-0.3.4/library/ade4TkGUI’
+removing debugging flags
+* removing ‘/nix/store/98gyn95d8s4sj9a913cy9fwrmba98fsv-r-ggmosaic-0.3.3/library/ggmosaic’
+       > * removing ‘/nix/store/98gyn95d8s4sj9a913cy9fwrmba98fsv-r-ggmosaic-0.3.3/library/ggmosaic’
+* removing ‘/nix/store/b6vdq58mv1xh91jq03hdk9rkdbkync5f-r-pdftools-3.6.0/library/pdftools’
+       > * removing ‘/nix/store/b6vdq58mv1xh91jq03hdk9rkdbkync5f-r-pdftools-3.6.0/library/pdftools’
+* removing ‘/nix/store/l78aq6isipcqq2zcbrbx2aqh4gs814k3-r-rpanel-1.1-5.2/library/rpanel’
+       > * removing ‘/nix/store/l78aq6isipcqq2zcbrbx2aqh4gs814k3-r-rpanel-1.1-5.2/library/rpanel’
+* removing ‘/nix/store/96yix1h7cgb1gjbj06ngaafwrdsm52w5-r-tkrplot-0.0-30/library/tkrplot’
+       > * removing ‘/nix/store/96yix1h7cgb1gjbj06ngaafwrdsm52w5-r-tkrplot-0.0-30/library/tkrplot’

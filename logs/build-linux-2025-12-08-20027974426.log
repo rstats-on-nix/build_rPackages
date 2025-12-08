@@ -1,0 +1,11 @@
+* removing '/nix/store/vhpqy3fxfqcwyk9px9xaz8awnn7fbxiv-r-doMPI-0.2.2/library/doMPI'
+       > * removing '/nix/store/vhpqy3fxfqcwyk9px9xaz8awnn7fbxiv-r-doMPI-0.2.2/library/doMPI'
+removing debugging flags
+/nix/store/m6h8096rx2l0d8g8zswsw7xgabs3cnz7-r-RcppArmadillo-15.2.2-1/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:199: note: '#pragma message: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.'
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+/nix/store/m6h8096rx2l0d8g8zswsw7xgabs3cnz7-r-RcppArmadillo-15.2.2-1/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:199: note: '#pragma message: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.'
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+/nix/store/m6h8096rx2l0d8g8zswsw7xgabs3cnz7-r-RcppArmadillo-15.2.2-1/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:199: note: '#pragma message: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.'
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")
+/nix/store/m6h8096rx2l0d8g8zswsw7xgabs3cnz7-r-RcppArmadillo-15.2.2-1/library/RcppArmadillo/include/RcppArmadillo/version/arma.h:66:199: note: '#pragma message: Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.'
+   66 |         #pragma message("Using fallback compilation with Armadillo 14.6.3. Please consider defining -DARMA_USE_CURRENT and also removing C++11 compilation directive. See GitHub issue #475 for more.")

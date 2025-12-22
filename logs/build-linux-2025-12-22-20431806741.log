@@ -1,0 +1,5 @@
+removing debugging flags
+* removing '/nix/store/ampr5psdw8idr67f0cbr7izfm57wkmwr-r-tidyjson-0.3.2/library/tidyjson'
+       > * removing '/nix/store/ampr5psdw8idr67f0cbr7izfm57wkmwr-r-tidyjson-0.3.2/library/tidyjson'
+* removing '/nix/store/brh5nhfl9bhb4lhz7x48mar9f4wsykry-r-rgeoda-0.1.0/library/rgeoda'
+       > * removing '/nix/store/brh5nhfl9bhb4lhz7x48mar9f4wsykry-r-rgeoda-0.1.0/library/rgeoda'

@@ -1,0 +1,39 @@
+➤ YN0019: │ @nx-nx-darwin-arm64-npm-16.10.0-93d4911bae-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-darwin-arm64-npm-16.10.0-93d4911bae-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-darwin-arm64-npm-16.10.0-93d4911bae-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-darwin-arm64-npm-16.10.0-93d4911bae-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-darwin-x64-npm-16.10.0-eb5d2a86dd-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm64-musl-npm-16.10.0-13d42bb0be-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-freebsd-x64-npm-16.10.0-4e12422563-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm64-musl-npm-16.10.0-13d42bb0be-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-x64-musl-npm-16.10.0-c249c058fe-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm-gnueabihf-npm-16.10.0-4af91811d2-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm64-musl-npm-16.10.0-13d42bb0be-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-x64-musl-npm-16.10.0-c249c058fe-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-win32-arm64-msvc-npm-16.10.0-4c8bfd2edd-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm64-gnu-npm-16.10.0-66d6548118-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-arm64-musl-npm-16.10.0-13d42bb0be-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-linux-x64-musl-npm-16.10.0-c249c058fe-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-win32-arm64-msvc-npm-16.10.0-4c8bfd2edd-8.zip appears to be unused - removing
+➤ YN0019: │ @nx-nx-win32-x64-msvc-npm-16.10.0-acff5f6c4e-8.zip appears to be unused - removing
+➤ YN0019: │ typescript-patch-e8424f5ae6-e14c87e8bd.zip appears to be unused - removing
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+removing build/bdist.linux-x86_64/wheel
+removing debugging flags

@@ -1,0 +1,5 @@
+* removing '/nix/store/bg6fy6433yf70ff9v7bfxi627pai6b2m-r-V8-8.2.0/library/V8'
+       > * removing '/nix/store/bg6fy6433yf70ff9v7bfxi627pai6b2m-r-V8-8.2.0/library/V8'
+* removing '/nix/store/p0z3cyvya2zp6nl2i0f1ql42gdj84dii-r-doMPI-0.2.2/library/doMPI'
+       > * removing '/nix/store/p0z3cyvya2zp6nl2i0f1ql42gdj84dii-r-doMPI-0.2.2/library/doMPI'
+removing debugging flags
